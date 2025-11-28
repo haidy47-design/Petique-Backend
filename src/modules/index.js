@@ -6,6 +6,8 @@ import contactRouter from "./contact/contact.routers.js";
 import categoryRouter from "./category/category.routers.js";
 import productRouter from "./product/product.routers.js";
 import cartRouter from './cart/cart.routers.js';
+import orderRouter from './order/order.Router.js';
+import petRouter from './Pet/pet.routers.js';
 
 export {
   authRouter,
@@ -15,4 +17,6 @@ export {
   categoryRouter,
   productRouter,
   cartRouter,
+  orderRouter,
+  petRouter
 };
