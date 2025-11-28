@@ -2,12 +2,14 @@ import authRouter from "./auth/auth.routers.js";
 import userRouter from "./user/user.routers.js";
 import qrRouter from "./qrcode/qrcode.routers.js";
 import contactRouter from "./contact/contact.routers.js";
-
 import categoryRouter from "./category/category.routers.js";
 import productRouter from "./product/product.routers.js";
-import cartRouter from './cart/cart.routers.js';
-import orderRouter from './order/order.Router.js';
-import petRouter from './Pet/pet.routers.js';
+import cartRouter from "./cart/cart.routers.js";
+import orderRouter from "./order/order.Router.js";
+import petRouter from "./Pet/pet.routers.js";
+import reminderRouter from "./reminders/reminder.routers.js";
+import serviceRouter from "./services/services.routers.js";
+import reservationRouter from "./reservation/reservation.routers.js";
 
 export {
   authRouter,
@@ -18,5 +20,8 @@ export {
   productRouter,
   cartRouter,
   orderRouter,
-  petRouter
+  petRouter,
+  reminderRouter,
+  serviceRouter,
+  reservationRouter,
 };

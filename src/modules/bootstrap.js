@@ -21,7 +21,9 @@ export const bootstrap = (app) => {
   app.use("/cart", allRouters.cartRouter);
   app.use("/order", allRouters.orderRouter);
   app.use("/pet", allRouters.petRouter);
-
+  app.use("/reminder", allRouters.reminderRouter);
+  app.use("/service", allRouters.serviceRouter);
+  app.use("/reserve", allRouters.reservationRouter);
   app.use((req, res, next) => {
     next(new AppError(`Route Not Found ${req.originalUrl}`, 404));
   });
