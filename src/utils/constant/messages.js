@@ -1,0 +1,41 @@
+const generateMessage = (entity) => ({
+  alreadyExist: `${entity} already exist`,
+  notFound: `${entity} not found`,
+  notAllowed: `You are not allowed to ${entity}`,
+  notAuthorized: `You are not authorized`,
+  notValid: `${entity} is not valid`,
+  notMatch: `${entity} do not match`,
+  notCorrect: `${entity} is not correct`,
+  notUnique: `${entity} must be unique`,
+  failToCreate: `fail to create ${entity}`,
+  failToUpdate: `fail to update ${entity}`,
+  failToDelete: `fail to delete ${entity}`,
+  createdSuccessfully: `${entity} created Successfully`,
+  updatedSuccessfully: `${entity} updated Successfully`,
+  deletedSuccessfully: `${entity} deleted Successfully`,
+  fetchedSuccessfully: `${entity} fetched Successfully`,
+  clearedSuccessfully:`${entity} Cleared Successfully`
+});
+
+export const messages = {
+  user: {
+    ...generateMessage("user"),
+    verifiedSuccessfully: "account verified Successfully",
+    invalidCredential: "invalid credential",
+    loggedInSuccessfully: "logIn Successfully",
+    notVerified: "email Not Verified",
+    hasOTP: "you already has OTP",
+    expireOTP: "OTP expired",
+    invalidOTP: "Invalid OTP",
+    loggedOutSuccessfully: "logged Out Successfully",
+  },
+  password: generateMessage("password"),
+  category: generateMessage("category"),
+  review: generateMessage("review"),
+  order: generateMessage("order"),
+  coupon: generateMessage("coupon"),
+  service: generateMessage("service"),
+  file: { required: "file is required" },
+  product: { ...generateMessage("product"), outStock: "Out Of Stock" },
+  cart: { ...generateMessage("cart"), empty: "cart empty" },
+};
