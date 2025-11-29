@@ -11,6 +11,7 @@ const fileValidation = {
     "image/webp",
     "image/tiff",
     "image/avif",
+    "image/jfif",
   ],
   document: [
     "application/pdf",
