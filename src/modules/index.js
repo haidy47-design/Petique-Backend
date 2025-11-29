@@ -10,6 +10,7 @@ import petRouter from "./Pet/pet.routers.js";
 import reminderRouter from "./reminders/reminder.routers.js";
 import serviceRouter from "./services/services.routers.js";
 import reservationRouter from "./reservation/reservation.routers.js";
+import vaccinationRouter from './vaccination/vaccination.routers.js';
 
 export {
   authRouter,
@@ -24,4 +25,5 @@ export {
   reminderRouter,
   serviceRouter,
   reservationRouter,
+  vaccinationRouter
 };
