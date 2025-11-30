@@ -3,17 +3,25 @@ import mongoose from "mongoose";
 const petSchema = new mongoose.Schema(
   {
     petOwner: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "AnimalCategory",
+      required: true,
+    },
+
     name: String,
     age: String,
-    weight: Number,
+    weight: String,
     allergies: [String],
+
     vaccinationHistory: [
       {
-        vaccine: String,
+        vaccine: { type: mongoose.Schema.Types.ObjectId, ref: "Vaccination" },
         date: Date,
         nextDose: Date,
       },
     ],
+
     image: {
       type: Object,
       default: {
@@ -21,14 +29,10 @@ const petSchema = new mongoose.Schema(
         public_id: process.env.ANIMAL_ID,
       },
     },
+
     isDeleted: { type: Boolean, default: false },
-    deletedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
-    deletedAt: {
-      type: Date,
-    },
+    deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    deletedAt: Date,
   },
   {
     timestamps: true,
@@ -37,11 +41,11 @@ const petSchema = new mongoose.Schema(
     toObject: { virtuals: true },
   }
 );
+
 petSchema.virtual("medicalRecords", {
   ref: "MedicalRecord",
   localField: "_id",
   foreignField: "pet",
 });
 
-const Pet = mongoose.model("Pet", petSchema);
-export default Pet;
+export default mongoose.model("Pet", petSchema);

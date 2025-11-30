@@ -5,7 +5,9 @@ import { deleteCloud } from "../../utils/fileUpload/file-functions.js";
 
 // ===> Add a new Pet
 export const addPet = catchAsyncError(async (req, res, next) => {
-  const { name, age, weight, allergies = [], vaccinationHistory = [] } = req.body;
+  const { name, age, weight, allergies = [], vaccinationHistory = [], category } = req.body;
+
+  if (!category) return next(new AppError("Category is required", 400));
 
   let petImage = {
     secure_url: process.env.ANIMAL_SECURE,
@@ -21,6 +23,7 @@ export const addPet = catchAsyncError(async (req, res, next) => {
 
   const newPet = new Pet({
     petOwner: req.authUser._id,
+    category,
     name,
     age,
     weight,
@@ -30,12 +33,14 @@ export const addPet = catchAsyncError(async (req, res, next) => {
   });
 
   const createdPet = await newPet.save();
+
   res.status(201).json({
     success: true,
     message: "Pet added successfully",
     data: createdPet,
   });
 });
+
 
 // ===> Update Pet
 export const updatePet = catchAsyncError(async (req, res, next) => {
@@ -79,10 +84,16 @@ export const getAllPets = catchAsyncError(async (req, res, next) => {
 // ===> Get a specific Pet
 export const getPetById = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
-  const pet = await Pet.findById(id).populate("petOwner", "userName email");
+  const pet = await Pet.findById(id)
+    .populate("petOwner", "userName email")
+    .populate("category", "name")
+    .populate("vaccinationHistory.vaccine", "name categories");
+
   if (!pet) return next(new AppError("Pet not found", 404));
+
   res.status(200).json({ success: true, data: pet });
 });
+
 
 // ===> Soft Delete Pet
 export const softDeletePet = catchAsyncError(async (req, res, next) => {

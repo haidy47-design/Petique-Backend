@@ -18,10 +18,20 @@ const vaccinationSchema = new mongoose.Schema(
       unique: true,
       minlength: 2,
     },
+
     description: {
       type: String,
       required: true,
     },
+
+    categories: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "AnimalCategory",
+        required: true,
+      },
+    ],
+
     doses: {
       type: [doseSchema],
       required: true,
@@ -30,14 +40,16 @@ const vaccinationSchema = new mongoose.Schema(
         message: "At least one dose is required",
       },
     },
+
     createdBy: {
       type: mongoose.Types.ObjectId,
       ref: "User",
       required: true,
     },
+
     isDeleted: { type: Boolean, default: false },
     deletedBy: { type: mongoose.Types.ObjectId, ref: "User" },
-    deletedAt: { type: Date },
+    deletedAt: Date,
   },
   { timestamps: true, versionKey: false }
 );

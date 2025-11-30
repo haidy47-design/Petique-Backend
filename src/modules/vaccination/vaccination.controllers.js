@@ -4,19 +4,18 @@ import { ApiFeature } from "../../utils/file-feature.js";
 
 //==> create vaccination
 export const addVaccination = catchAsyncError(async (req, res, next) => {
-  let { name, description, doses } = req.body;
+  let { name, description, doses, categories } = req.body;
 
   name = name.toLowerCase();
 
   const exists = await Vaccination.findOne({ name });
   if (exists) return next(new AppError("Vaccination already exists", 409));
 
-  const parsedDoses = doses;
-
   const vaccination = await Vaccination.create({
     name,
     description,
-    doses: parsedDoses,
+    categories,
+    doses,
     createdBy: req.authUser._id,
   });
 
@@ -27,24 +26,22 @@ export const addVaccination = catchAsyncError(async (req, res, next) => {
   });
 });
 
+
 //==> update vaccination
 export const updateVaccination = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
-  let { name, description, doses } = req.body;
+  let { name, description, doses, categories } = req.body;
 
   const exists = await Vaccination.findById(id);
   if (!exists) return next(new AppError("Vaccination not found", 404));
 
-  const nameExists = await Vaccination.findOne({
-    name,
-    _id: { $ne: id },
-  });
-
+  const nameExists = await Vaccination.findOne({ name, _id: { $ne: id } });
   if (nameExists) return next(new AppError("Name already exists", 409));
 
   if (name) exists.name = name.toLowerCase();
   if (description) exists.description = description;
   if (doses) exists.doses = doses;
+  if (categories) exists.categories = categories;
 
   const updated = await exists.save();
 
@@ -58,7 +55,9 @@ export const updateVaccination = catchAsyncError(async (req, res, next) => {
 //==> get all
 export const getVaccinations = catchAsyncError(async (req, res, next) => {
   const apiFeature = new ApiFeature(
-    Vaccination.find({ isDeleted: false }).populate("createdBy", "userName"),
+    Vaccination.find({ isDeleted: false })
+      .populate("createdBy", "userName")
+      .populate("categories", "name"),
     req.query
   )
     .filter()
@@ -75,6 +74,7 @@ export const getVaccinations = catchAsyncError(async (req, res, next) => {
     data: vaccinations,
   });
 });
+
 
 //==> get specific
 export const getVaccination = catchAsyncError(async (req, res, next) => {

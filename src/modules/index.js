@@ -11,6 +11,7 @@ import reminderRouter from "./reminders/reminder.routers.js";
 import serviceRouter from "./services/services.routers.js";
 import reservationRouter from "./reservation/reservation.routers.js";
 import vaccinationRouter from './vaccination/vaccination.routers.js';
+import animalCategoryRouter from './animalCategory/animalCategory.routers.js';
 
 export {
   authRouter,
@@ -25,5 +26,6 @@ export {
   reminderRouter,
   serviceRouter,
   reservationRouter,
-  vaccinationRouter
+  vaccinationRouter,
+  animalCategoryRouter
 };
