@@ -130,3 +130,22 @@ export const deletePet = catchAsyncError(async (req, res, next) => {
 
   res.status(200).json({ success: true, message: "Pet deleted permanently" });
 });
+
+// ===> get logged-in user pets
+export const getUserPets = catchAsyncError(async (req, res, next) => {
+  const userId = req.authUser._id;
+
+  const pets = await Pet.find({
+    petOwner: userId,
+    isDeleted: false,
+  })
+    .populate("category", "name")
+    .populate("vaccinationHistory.vaccine", "name categories");
+
+  res.status(200).json({
+    success: true,
+    message: "User pets retrieved successfully",
+    results: pets.length,
+    data: pets,
+  });
+});

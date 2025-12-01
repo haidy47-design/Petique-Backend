@@ -11,6 +11,7 @@ vaccinationRouter.post(
 );
 
 vaccinationRouter.get("/", vaccinationControllers.getVaccinations);
+vaccinationRouter.get("/ofcategory", vaccinationControllers.getVaccinationOfCategory);
 
 vaccinationRouter
   .route("/:id")

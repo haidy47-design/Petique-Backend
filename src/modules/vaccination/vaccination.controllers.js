@@ -88,6 +88,18 @@ export const getVaccination = catchAsyncError(async (req, res, next) => {
   res.status(200).json({ success: true, data: vaccination });
 });
 
+//==> get vaccinations?category=catId
+export const getVaccinationOfCategory = async (req, res) => {
+  const { category } = req.query;
+  const filter = { isDeleted: false };
+
+  if (category) {
+    filter.categories = category; 
+  }
+  const vaccinations = await Vaccination.find(filter);
+  res.json(vaccinations);
+};
+
 //==> hard Delete
 export const deleteVaccination = catchAsyncError(async (req, res, next) => {
   const vac = await Vaccination.findByIdAndDelete(req.params.id);
