@@ -9,7 +9,83 @@ reservationRouter.post(
   isAuthenticated,
   reservationControllers.createReservation
 );
-reservationRouter.get("/", isAuthenticated, reservationControllers.getReservations);
+reservationRouter.get(
+  "/",
+  isAuthenticated,
+  reservationControllers.getReservations
+);
+reservationRouter.get(
+  "/types/upcoming",
+  isAuthenticated,
+  reservationControllers.getUpcomingReservations
+);
+
+reservationRouter.get(
+  "/types/past",
+  isAuthenticated,
+  reservationControllers.getPastReservations
+);
+reservationRouter.get(
+  "/check/availability",
+  isAuthenticated,
+  reservationControllers.checkAvailableSlots
+);
+// ===> doctor routes 
+reservationRouter.get(
+  "/doctor/reservations/today",
+  isAuthenticated,
+  reservationControllers.getDoctorTodayReservations
+);
+
+reservationRouter.get(
+  "/doctor/reservations/weekly",
+  isAuthenticated,
+  reservationControllers.getDoctorWeeklyReservations
+);
+
+// ====> statistics 
+reservationRouter.get(
+  "/stats/total",
+  isAuthenticated,
+  reservationControllers.getTotalReservations
+);
+
+reservationRouter.get(
+  "/stats/service",
+  isAuthenticated,
+  reservationControllers.getReservationsByService
+);
+
+reservationRouter.get(
+  "/stats/daily",
+  isAuthenticated,
+  reservationControllers.getDailyReservations
+);
+
+reservationRouter.get(
+  "/stats/monthly",
+  isAuthenticated,
+  reservationControllers.getMonthlyReservations
+);
+
+reservationRouter.get(
+  "/stats/most-active-doctors",
+  isAuthenticated,
+  reservationControllers.getMostActiveDoctors
+);
+
+// ===> FILTER 
+reservationRouter.get(
+  "/filter/search",
+  isAuthenticated,
+  reservationControllers.filterReservations
+);
+reservationRouter.get(
+  "/status/:status",
+  isAuthenticated,
+  reservationControllers.getReservationsByStatus
+);
+//===> reservation
 reservationRouter.get(
   "/:id",
   isAuthenticated,
@@ -27,7 +103,6 @@ reservationRouter.put(
   reservationControllers.softDeleteReservation
 );
 
-// hard delete
 reservationRouter.delete(
   "/:id",
   isAuthenticated,

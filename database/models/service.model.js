@@ -6,6 +6,8 @@ const serviceSchema = new mongoose.Schema(
     description: String,
     priceRange: String,
     preparations: String,
+    benefits:String,
+    tips:String,
     image: {
       type: Object,
       required: [true, "image is required"],

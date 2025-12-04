@@ -7,7 +7,8 @@ import { ApiFeature } from "../../utils/file-feature.js";
 
 // =======> add services
 export const addService = catchAsyncError(async (req, res, next) => {
-  const { title, description, priceRange, preparations } = req.body;
+  const { title, description, priceRange, preparations, benefits, tips } =
+    req.body;
 
   if (!req.files?.image || req.files.image.length === 0) {
     return next(new AppError("Service image is required", 400));
@@ -38,6 +39,8 @@ export const addService = catchAsyncError(async (req, res, next) => {
     subImages,
     createdBy: req.authUser._id,
     updatedBy: req.authUser._id,
+    benefits,
+    tips,
   });
 
   await newService.save();
@@ -152,6 +155,8 @@ export const updateService = catchAsyncError(async (req, res, next) => {
     "description",
     "priceRange",
     "preparations",
+    "benefits",
+    "tips",
   ];
   updatableFields.forEach((field) => {
     if (req.body[field] !== undefined) service[field] = req.body[field];

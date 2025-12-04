@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { TIME_SLOTS } from "../../src/utils/constant/timeSlots.js";
 
 const reservationSchema = new mongoose.Schema(
   {
@@ -26,19 +27,15 @@ const reservationSchema = new mongoose.Schema(
       default: null,
     },
 
-    date: {
-      type: Date,
-      required: true,
-    },
+    date: { type: Date, required: true },
 
     timeSlot: {
       type: String,
+      enum: TIME_SLOTS,
       required: true,
     },
 
-    notes: {
-      type: String,
-    },
+    notes: String,
 
     status: {
       type: String,
@@ -53,18 +50,10 @@ const reservationSchema = new mongoose.Schema(
     },
 
     isDeleted: { type: Boolean, default: false },
-    deletedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
-    deletedAt: { type: Date },
+    deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    deletedAt: Date,
   },
-  {
-    timestamps: true,
-    versionKey: false,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
-  }
+  { timestamps: true, versionKey: false }
 );
 
 const Reservation = mongoose.model("Reservation", reservationSchema);

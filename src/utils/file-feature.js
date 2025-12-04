@@ -50,7 +50,13 @@ export class ApiFeature {
         "product",
         "comment",
         "discount",
-        "category"
+        "category",
+        "status",
+        "benefits",
+        "tips",
+        "pet",
+        "petOwner",
+        "service"
       ];
       const searchQuery = {
         $or: searchFields.map((field) => ({

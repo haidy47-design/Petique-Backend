@@ -5,7 +5,14 @@ import { deleteCloud } from "../../utils/fileUpload/file-functions.js";
 
 // ===> Add a new Pet
 export const addPet = catchAsyncError(async (req, res, next) => {
-  const { name, age, weight, allergies = [], vaccinationHistory = [], category } = req.body;
+  const {
+    name,
+    age,
+    weight,
+    allergies = [],
+    vaccinationHistory = [],
+    category,
+  } = req.body;
 
   if (!category) return next(new AppError("Category is required", 400));
 
@@ -15,9 +22,12 @@ export const addPet = catchAsyncError(async (req, res, next) => {
   };
 
   if (req.file) {
-    const { secure_url, public_id } = await cloudinary.uploader.upload(req.file.path, {
-      folder: "PetsClinic/Pets",
-    });
+    const { secure_url, public_id } = await cloudinary.uploader.upload(
+      req.file.path,
+      {
+        folder: "PetsClinic/Pets",
+      }
+    );
     petImage = { secure_url, public_id };
   }
 
@@ -41,27 +51,38 @@ export const addPet = catchAsyncError(async (req, res, next) => {
   });
 });
 
-
 // ===> Update Pet
 export const updatePet = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   const pet = await Pet.findById(id);
   if (!pet) return next(new AppError("Pet not found", 404));
 
-  if (pet.petOwner.toString() !== req.authUser._id.toString() && req.authUser.role !== "admin") {
+  if (
+    pet.petOwner.toString() !== req.authUser._id.toString() &&
+    req.authUser.role !== "admin"
+  ) {
     return next(new AppError("You are not authorized to update this pet", 403));
   }
 
-  const updatableFields = ["name", "age", "weight", "allergies", "vaccinationHistory"];
+  const updatableFields = [
+    "name",
+    "age",
+    "weight",
+    "allergies",
+    "vaccinationHistory",
+  ];
   updatableFields.forEach((field) => {
     if (req.body[field] !== undefined) pet[field] = req.body[field];
   });
 
   if (req.file) {
     if (pet.image?.public_id) await deleteCloud(pet.image.public_id);
-    const { secure_url, public_id } = await cloudinary.uploader.upload(req.file.path, {
-      folder: "PetsClinic/Pets",
-    });
+    const { secure_url, public_id } = await cloudinary.uploader.upload(
+      req.file.path,
+      {
+        folder: "PetsClinic/Pets",
+      }
+    );
     pet.image = { secure_url, public_id };
   }
 
@@ -77,7 +98,10 @@ export const updatePet = catchAsyncError(async (req, res, next) => {
 
 // ===> Get all Pets
 export const getAllPets = catchAsyncError(async (req, res, next) => {
-  const pets = await Pet.find({ isDeleted: false }).populate("petOwner", "userName email");
+  const pets = await Pet.find({ isDeleted: false })
+    .populate("petOwner", "userName email")
+    .populate("category", "name")
+    .populate("vaccinationHistory.vaccine", "name categories");
   res.status(200).json({ success: true, data: pets });
 });
 
@@ -94,14 +118,16 @@ export const getPetById = catchAsyncError(async (req, res, next) => {
   res.status(200).json({ success: true, data: pet });
 });
 
-
 // ===> Soft Delete Pet
 export const softDeletePet = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   const pet = await Pet.findById(id);
   if (!pet) return next(new AppError("Pet not found", 404));
 
-  if (pet.petOwner.toString() !== req.authUser._id.toString() && req.authUser.role !== "admin") {
+  if (
+    pet.petOwner.toString() !== req.authUser._id.toString() &&
+    req.authUser.role !== "admin"
+  ) {
     return next(new AppError("You are not authorized to delete this pet", 403));
   }
 
@@ -112,7 +138,9 @@ export const softDeletePet = catchAsyncError(async (req, res, next) => {
   pet.deletedAt = new Date();
   await pet.save();
 
-  res.status(200).json({ success: true, message: "Pet deleted successfully", data: pet });
+  res
+    .status(200)
+    .json({ success: true, message: "Pet deleted successfully", data: pet });
 });
 
 // ===> Hard Delete Pet
@@ -121,7 +149,10 @@ export const deletePet = catchAsyncError(async (req, res, next) => {
   const pet = await Pet.findById(id);
   if (!pet) return next(new AppError("Pet not found", 404));
 
-  if (pet.petOwner.toString() !== req.authUser._id.toString() && req.authUser.role !== "admin") {
+  if (
+    pet.petOwner.toString() !== req.authUser._id.toString() &&
+    req.authUser.role !== "admin"
+  ) {
     return next(new AppError("You are not authorized to delete this pet", 403));
   }
 
@@ -139,6 +170,7 @@ export const getUserPets = catchAsyncError(async (req, res, next) => {
     petOwner: userId,
     isDeleted: false,
   })
+    .populate("petOwner", "userName email")
     .populate("category", "name")
     .populate("vaccinationHistory.vaccine", "name categories");
 

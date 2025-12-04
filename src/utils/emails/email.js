@@ -280,3 +280,50 @@ export async function sendReminderEmail({
   console.log(`📩 Reminder email sent to ${to}:`, info.messageId);
   return info;
 }
+
+
+export async function sendAppointmentReminder(reservation) {
+  const html = `
+  <div style="font-family:Poppins;background:#f2f8ff;padding:30px;">
+    <div style="max-width:600px;margin:auto;background:#fff;border-radius:15px;overflow:hidden;
+    box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+
+      <div style="background:#709775;color:#fff;text-align:center;padding:20px;">
+        <h2 style="margin:0;font-size:22px;">⏰ Appointment Reminder — BETCLINIC</h2>
+      </div>
+
+      <div style="padding:25px; line-height:1.7;">
+        <p style="font-size:16px;color:#333;">Hello ${reservation.petOwner.userName} 👋</p>
+
+        <p style="font-size:15px;color:#555;">
+          This is a friendly reminder that your pet has an appointment in <strong>2 hours</strong>.
+        </p>
+
+        <div style="background:#e7f2ff;border-radius:12px;padding:20px;margin:20px 0;">
+          <p><strong>📅 Date:</strong> ${reservation.date.toDateString()}</p>
+          <p><strong>⏰ Time:</strong> ${reservation.timeSlot}</p>
+          <p><strong>👨‍⚕️ Doctor:</strong> ${reservation?.doctor?.userName || "Any available doctor"}</p>
+        </div>
+
+        <p style="color:#777;font-size:14px;">
+          Please arrive 10 minutes earlier.  
+          <br/>We look forward to caring for your furry friend 🐶🐱
+        </p>
+      </div>
+
+      <div style="background:#bfd8bd;color:#fff;text-align:center;padding:15px;font-size:14px;">
+        BETCLINIC Veterinary Care — Always Here For Your Pets 🐾
+      </div>
+
+    </div>
+  </div>`;
+
+  await transporter.sendMail({
+    from: `"BETCLINIC 🐶🐱" <${process.env.SENDEMAIL}>`,
+    to: reservation.petOwner.email,
+    subject: "⏰ Your Pet Appointment Reminder — BETCLINIC",
+    html
+  });
+
+  console.log("Reminder email sent →", reservation.petOwner.email);
+}
