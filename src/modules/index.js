@@ -12,6 +12,8 @@ import serviceRouter from "./services/services.routers.js";
 import reservationRouter from "./reservation/reservation.routers.js";
 import vaccinationRouter from './vaccination/vaccination.routers.js';
 import animalCategoryRouter from './animalCategory/animalCategory.routers.js';
+import reviewRouter from './reviews/review.routers.js';
+import clinicReviewRouter from './clinicReview/clinicReviews.routers.js';
 
 export {
   authRouter,
@@ -27,5 +29,7 @@ export {
   serviceRouter,
   reservationRouter,
   vaccinationRouter,
-  animalCategoryRouter
+  animalCategoryRouter,
+  reviewRouter,
+  clinicReviewRouter
 };

@@ -26,6 +26,8 @@ export const bootstrap = (app) => {
   app.use("/reserve", allRouters.reservationRouter);
   app.use("/vacine", allRouters.vaccinationRouter);
   app.use("/animalCat", allRouters.animalCategoryRouter);
+  app.use("/reviews", allRouters.reviewRouter);
+  app.use("/clinicReview", allRouters.clinicReviewRouter);
 
   app.use((req, res, next) => {
     next(new AppError(`Route Not Found ${req.originalUrl}`, 404));
