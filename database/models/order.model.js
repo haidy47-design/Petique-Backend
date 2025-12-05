@@ -39,7 +39,10 @@ const orderSchema = new Schema(
       required: true,
       trim: true,
     },
-
+    notes: {
+      type: String,
+      trim: true,
+    },
     phone: {
       type: String,
       required: true,
@@ -67,7 +70,7 @@ const orderSchema = new Schema(
       type: mongoose.Types.ObjectId,
       ref: "Coupon",
     },
-    
+
     finalPrice: {
       type: Number,
       required: true,

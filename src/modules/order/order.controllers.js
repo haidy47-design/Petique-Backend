@@ -9,10 +9,9 @@ import { couponTypes, orderStatus } from "../../utils/constant/enums.js";
 import Product from "../../../database/models/product.model.js";
 import { Parser } from "json2csv";
 import PDFDocument from "pdfkit";
-import fs from "fs";
 
 export const createOrder = catchAsyncError(async (req, res, next) => {
-  const { fullName, address, phone, couponCode } = req.body;
+  const { fullName, address, phone, couponCode, notes } = req.body;
   const userId = req.authUser._id;
   let cart = await Cart.findOne({ user: userId }).populate(
     "products.productId"
@@ -77,6 +76,7 @@ export const createOrder = catchAsyncError(async (req, res, next) => {
     phone,
     orderPrice,
     finalPrice,
+    notes,
     coupon: appliedCoupon,
   });
 
@@ -342,9 +342,9 @@ export const getAllOrders = catchAsyncError(async (req, res, next) => {
 
 export const updateOrder = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
-  const { fullName, phone, address, status, finalPrice } = req.body;
+  const { fullName, phone, address, status, finalPrice , notes} = req.body;
 
-  if (!fullName && !phone && !address && !status && finalPrice === undefined) {
+  if (!fullName && !phone && !address && !status && !notes && finalPrice === undefined) {
     return next(
       new AppError("Please provide at least one field to update", 400)
     );
@@ -376,6 +376,7 @@ export const updateOrder = catchAsyncError(async (req, res, next) => {
   if (phone) order.phone = phone;
   if (address) order.address = address;
   if (status) order.status = status;
+  if (notes) order.notes = notes;
   if (finalPrice !== undefined) order.finalPrice = finalPrice;
 
   await order.save();
