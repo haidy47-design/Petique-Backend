@@ -447,3 +447,14 @@ export const getDemographics = catchAsyncError(async (req, res, next) => {
     },
   });
 });
+
+// ==> get all doctors
+export const getAllDoctors = catchAsyncError(async (req, res, next) => {
+  const doctors = await User.find({ role: roles.DOCTORS })
+    .select("userName email");
+
+  res.status(200).json({
+    success: true,
+    data: doctors,
+  });
+});

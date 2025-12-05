@@ -7,6 +7,7 @@ import { uploadSingleFile } from "../../utils/fileUpload/multer-cloud.js";
 const userRouter = Router();
 
 userRouter.get("/profile", isAuthenticated, userController.getProfile);
+userRouter.get("/doctor", userController.getAllDoctors);
 userRouter.get("/allUsers", isAuthenticated, userController.getAllUsers);
 
 // ===> Analysis routes for dashboard

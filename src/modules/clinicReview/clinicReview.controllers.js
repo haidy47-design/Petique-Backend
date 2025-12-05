@@ -1,20 +1,21 @@
 import User from "../../../database/models/user.model.js";
 import Service from "../../../database/models/service.model.js";
 import Reservation from "../../../database/models/reservation.model.js";
-import Twilio from "twilio";
 
 import { AppError, catchAsyncError } from "../../utils/catch-error.js";
 import { roles } from "../../utils/constant/enums.js";
 import { recalcAvgRating } from "../../utils/review.helper.js";
 import clinicReviewModel from "../../../database/models/clinicReview.model.js";
-import {  sendCustomEmail } from "../../utils/emails/email.js";
+import { sendCustomEmail } from "../../utils/emails/email.js";
 
-// ===> add review 
+// ===> add review
 export const addClinicReview = catchAsyncError(async (req, res, next) => {
-  const { comment, rate, doctor, service, reservation } = req.body;
+  const { comment, rate, doctor, service, reservation, clinic } = req.body;
 
-  if (!doctor && !service && !reservation)
-    return next(new AppError("You must review doctor or service or reservation", 400));
+  if (!doctor && !service && !reservation && !clinic)
+    return next(
+      new AppError("You must review doctor or service or reservation or clinic", 400)
+    );
 
   if (doctor) {
     const docExists = await User.findById(doctor);
@@ -28,7 +29,8 @@ export const addClinicReview = catchAsyncError(async (req, res, next) => {
 
   if (reservation) {
     const reservationExist = await Reservation.findById(reservation);
-    if (!reservationExist) return next(new AppError("Reservation not found", 404));
+    if (!reservationExist)
+      return next(new AppError("Reservation not found", 404));
   }
 
   const reviewExist = await clinicReviewModel.findOne({
@@ -43,7 +45,7 @@ export const addClinicReview = catchAsyncError(async (req, res, next) => {
     reviewExist.rate = rate;
     await reviewExist.save();
   } else {
-    await ClinicReview.create({
+     await clinicReviewModel.create({
       comment,
       rate,
       doctor,
@@ -58,15 +60,17 @@ export const addClinicReview = catchAsyncError(async (req, res, next) => {
   res.status(201).json({
     success: true,
     message: reviewExist ? "Review updated" : "Review added",
+    data: reviewExist,
   });
 });
 
 // ===> get user review
 export const getUserClinicReviews = catchAsyncError(async (req, res, next) => {
-  const reviews = await clinicReviewModel.find({
-    user: req.authUser._id,
-    isDeleted: { $ne: true },
-  })
+  const reviews = await clinicReviewModel
+    .find({
+      user: req.authUser._id,
+      isDeleted: { $ne: true },
+    })
     .populate("doctor", "userName")
     .populate("service", "title price")
     .populate("reservation", "date timeSlot");
@@ -75,22 +79,25 @@ export const getUserClinicReviews = catchAsyncError(async (req, res, next) => {
 });
 
 // ===> get reviews for service and doctor
-export const getClinicReviewsForTarget = catchAsyncError(async (req, res, next) => {
-  const { targetType, targetId } = req.params;
+export const getClinicReviewsForTarget = catchAsyncError(
+  async (req, res, next) => {
+    const { targetType, targetId } = req.params;
 
-  const filter = { isDeleted: { $ne: true } };
+    const filter = { isDeleted: { $ne: true } };
 
-  if (targetType === "doctor") filter.doctor = targetId;
-  else if (targetType === "service") filter.service = targetId;
-  else if (targetType === "reservation") filter.reservation = targetId;
-  else if (targetType === "clinic") filter.clinic = "MainClinic";
-  else return next(new AppError("Invalid target type.", 400));
+    if (targetType === "doctor") filter.doctor = targetId;
+    else if (targetType === "service") filter.service = targetId;
+    else if (targetType === "reservation") filter.reservation = targetId;
+    else if (targetType === "clinic") filter.clinic = "PetiqueClinic";
+    else return next(new AppError("Invalid target type.", 400));
 
-  const reviews = await clinicReviewModel.find(filter)
-    .populate("user", "userName email");
+    const reviews = await clinicReviewModel
+      .find(filter)
+      .populate("user", "userName email");
 
-  res.status(200).json({ success: true, data: reviews });
-});
+    res.status(200).json({ success: true, data: reviews });
+  }
+);
 
 // ===> delete review
 export const deleteClinicReview = catchAsyncError(async (req, res, next) => {
@@ -116,34 +123,37 @@ export const deleteClinicReview = catchAsyncError(async (req, res, next) => {
 });
 
 //====> soft delete review
-export const softDeleteClinicReview = catchAsyncError(async (req, res, next) => {
-  const { id } = req.params;
-  const review = await clinicReviewModel.findById(id);
-  if (!review) return next(new AppError("Review not found", 404));
+export const softDeleteClinicReview = catchAsyncError(
+  async (req, res, next) => {
+    const { id } = req.params;
+    const review = await clinicReviewModel.findById(id);
+    if (!review) return next(new AppError("Review not found", 404));
 
-  review.isDeleted = true;
-  review.deletedAt = new Date();
-  await review.save();
+    review.isDeleted = true;
+    review.deletedAt = new Date();
+    await review.save();
 
-  await recalcAvgRating({
-    doctor: review.doctor,
-    service: review.service,
-  });
+    await recalcAvgRating({
+      doctor: review.doctor,
+      service: review.service,
+    });
 
-  res.status(200).json({ success: true, message: "Review soft deleted" });
-});
+    res.status(200).json({ success: true, message: "Review soft deleted" });
+  }
+);
 
 // ===> get specific clinic review
 export const getClinicReviewById = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
 
-  const review = await clinicReviewModel.findById(id)
+  const review = await clinicReviewModel
+    .findById(id)
     .populate("user", "userName email mobileNumber")
     .populate("doctor", "userName email mobileNumber")
     .populate("service", "title price")
     .populate("reservation", "date timeSlot");
 
-  if (!review || review.isDeleted) 
+  if (!review || review.isDeleted)
     return next(new AppError("Review not found", 404));
 
   res.status(200).json({
@@ -154,7 +164,8 @@ export const getClinicReviewById = catchAsyncError(async (req, res, next) => {
 
 //====> all reviews
 export const getAllClinicReviews = catchAsyncError(async (req, res, next) => {
-  const reviews = await clinicReviewModel.find({ isDeleted: { $ne: true } })
+  const reviews = await clinicReviewModel
+    .find({ isDeleted: { $ne: true } })
     .populate("user", "userName email")
     .populate("doctor", "userName")
     .populate("service", "title");
@@ -169,9 +180,10 @@ export const getAllClinicReviews = catchAsyncError(async (req, res, next) => {
 //====> admin: get Clinic Reviews With Contacts
 export const getClinicReviewsWithContacts = catchAsyncError(
   async (req, res, next) => {
-    const reviews = await clinicReviewModel.find({
-      isDeleted: { $ne: true },
-    })
+    const reviews = await clinicReviewModel
+      .find({
+        isDeleted: { $ne: true },
+      })
       .populate("user", "userName email mobileNumber")
       .populate("doctor", "userName")
       .populate("service", "title");
@@ -180,37 +192,40 @@ export const getClinicReviewsWithContacts = catchAsyncError(
   }
 );
 
-// ===> contact user via Email 
-export const contactClinicReviewUser = catchAsyncError(async (req, res, next) => {
-  const { reviewId } = req.params;
-  const { subject, message } = req.body;
+// ===> contact user via Email
+export const contactClinicReviewUser = catchAsyncError(
+  async (req, res, next) => {
+    const { reviewId } = req.params;
+    const { subject, message } = req.body;
 
-  if (req.authUser.role !== roles.ADMIN)
-    return next(new AppError("Not allowed", 403));
+    if (req.authUser.role !== roles.ADMIN)
+      return next(new AppError("Not allowed", 403));
 
-  const review = await clinicReviewModel.findById(reviewId).populate(
-    "user",
-    "userName email mobileNumber"
-  );
+    const review = await clinicReviewModel
+      .findById(reviewId)
+      .populate("user", "userName email mobileNumber");
 
-  if (!review) return next(new AppError("Review not found", 404));
+    if (!review) return next(new AppError("Review not found", 404));
 
-  const { userName, email, mobileNumber } = review.user;
+    const { userName, email, mobileNumber } = review.user;
 
-  // === Send Email ===
-  if (email) {
-    await sendCustomEmail({
-      to: email,
-      subject: subject || "Regarding your Clinic Review",
-      text: message || `Hello ${userName}, we are contacting you regarding your review.`,
-      reviewerName: userName,
+    // === Send Email ===
+    if (email) {
+      await sendCustomEmail({
+        to: email,
+        subject: subject || "Regarding your Clinic Review",
+        text:
+          message ||
+          `Hello ${userName}, we are contacting you regarding your review.`,
+        reviewerName: userName,
+      });
+    }
+    res.status(200).json({
+      success: true,
+      message: "User contacted successfully via email",
     });
   }
-  res.status(200).json({
-    success: true,
-    message: "User contacted successfully via email",
-  });
-});
+);
 
 // ===> generate WhatsApp chat link for clinic review user
 export const contactClinicReviewUserWhatsApp = catchAsyncError(
@@ -220,10 +235,9 @@ export const contactClinicReviewUserWhatsApp = catchAsyncError(
     if (req.authUser.role !== roles.ADMIN)
       return next(new AppError("Not allowed", 403));
 
-    const review = await clinicReviewModel.findById(reviewId).populate(
-      "user",
-      "userName mobileNumber"
-    );
+    const review = await clinicReviewModel
+      .findById(reviewId)
+      .populate("user", "userName mobileNumber");
 
     if (!review) return next(new AppError("Review not found", 404));
     if (!review.user.mobileNumber)
@@ -231,7 +245,8 @@ export const contactClinicReviewUserWhatsApp = catchAsyncError(
 
     const formatEgyptianNumber = (number) => {
       let cleanedNumber = number.replace(/\D/g, "");
-      if (cleanedNumber.startsWith("0")) cleanedNumber = cleanedNumber.substring(1);
+      if (cleanedNumber.startsWith("0"))
+        cleanedNumber = cleanedNumber.substring(1);
       if (!cleanedNumber.startsWith("20")) cleanedNumber = "20" + cleanedNumber;
       return cleanedNumber;
     };

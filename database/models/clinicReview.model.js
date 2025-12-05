@@ -41,7 +41,7 @@ const clinicReviewSchema = new mongoose.Schema(
 
     clinic: {
       type: String,
-      default: "Petique Clinic", 
+      default: "PetiqueClinic", 
     },
 
     isDeleted: { type: Boolean, default: false },
