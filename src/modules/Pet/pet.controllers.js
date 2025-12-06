@@ -181,3 +181,41 @@ export const getUserPets = catchAsyncError(async (req, res, next) => {
     data: pets,
   });
 });
+
+// ===> count animals for each category
+export const countPetsPerCategory = catchAsyncError(async (req, res, next) => {
+  const result = await Pet.aggregate([
+    {
+      $match: { isDeleted: false }
+    },
+    {
+      $group: {
+        _id: "$category",
+        totalPets: { $sum: 1 }
+      }
+    },
+    {
+      $lookup: {
+        from: "animalcategories",
+        localField: "_id",
+        foreignField: "_id",
+        as: "category"
+      }
+    },
+    { $unwind: "$category" },
+    {
+      $project: {
+        _id: 0,
+        categoryId: "$category._id",
+        categoryName: "$category.name",
+        totalPets: 1
+      }
+    }
+  ]);
+
+  res.status(200).json({
+    success: true,
+    message: "Pets count per category",
+    data: result
+  });
+});

@@ -19,6 +19,9 @@ const orderSchema = new Schema(
           ref: "Product",
           required: true,
         },
+        imageCover: {
+          type: Object,
+        },
         title: String,
         price: Number,
         quantity: {

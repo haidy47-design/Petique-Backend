@@ -36,6 +36,7 @@ export const createOrder = catchAsyncError(async (req, res, next) => {
 
     orderProducts.push({
       productId: product._id,
+      imageCover: product.imageCover,
       title: product.title,
       price: product.price,
       quantity: item.quantity,

@@ -7,6 +7,7 @@ const petRouter = Router();
 
 petRouter.get("/", isAuthenticated, petControllers.getAllPets);
 petRouter.get("/userPet", isAuthenticated, petControllers.getUserPets);
+petRouter.get("/count-cat", isAuthenticated, petControllers.countPetsPerCategory);
 petRouter.get("/:id", petControllers.getPetById);
 
 petRouter.post("/", isAuthenticated, uploadSingleFile("image"), petControllers.addPet);
