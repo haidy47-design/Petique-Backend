@@ -34,6 +34,14 @@ userRouter.put(
 
 userRouter.delete("/", isAuthenticated, userController.deleteUserByUser);
 userRouter.delete("/softDelete", isAuthenticated, userController.softDeleteUserByUser);
+
+//====> doctor
+userRouter.post("/newDoctor", isAuthenticated, userController.addNewDoctor);
+userRouter.put("/soft", isAuthenticated, userController.softDeleteDoctor);
+userRouter.delete("deleteDoc/:id", isAuthenticated, userController.deleteDoctor);
+userRouter.delete("updateDoc/:id", isAuthenticated, userController.updateDoctor);
+
+//===> admin
 userRouter.put("/byadmin/:id", isAuthenticated, userController.updateUserByAdmin);
 userRouter.delete("/delete/:id", isAuthenticated, userController.deleteUser);
 userRouter.put("/softDelete/:id", isAuthenticated, userController.softDeleteUser);
