@@ -24,10 +24,11 @@ export const bootstrap = (app) => {
   app.use("/reminder", allRouters.reminderRouter);
   app.use("/service", allRouters.serviceRouter);
   app.use("/reserve", allRouters.reservationRouter);
-  app.use("/vacine", allRouters.vaccinationRouter);
+  app.use("/vaccine", allRouters.vaccinationRouter);
   app.use("/animalCat", allRouters.animalCategoryRouter);
   app.use("/reviews", allRouters.reviewRouter);
   app.use("/clinicReview", allRouters.clinicReviewRouter);
+  app.use("/doctor", allRouters.doctorRouter);
 
   app.use((req, res, next) => {
     next(new AppError(`Route Not Found ${req.originalUrl}`, 404));

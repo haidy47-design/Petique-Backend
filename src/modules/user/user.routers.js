@@ -7,7 +7,6 @@ import { uploadSingleFile } from "../../utils/fileUpload/multer-cloud.js";
 const userRouter = Router();
 
 userRouter.get("/profile", isAuthenticated, userController.getProfile);
-userRouter.get("/doctor", userController.getAllDoctors);
 userRouter.get("/allUsers", isAuthenticated, userController.getAllUsers);
 
 // ===> Analysis routes for dashboard
@@ -34,12 +33,6 @@ userRouter.put(
 
 userRouter.delete("/", isAuthenticated, userController.deleteUserByUser);
 userRouter.delete("/softDelete", isAuthenticated, userController.softDeleteUserByUser);
-
-//====> doctor
-userRouter.post("/newDoctor", isAuthenticated, userController.addNewDoctor);
-userRouter.put("/soft", isAuthenticated, userController.softDeleteDoctor);
-userRouter.delete("deleteDoc/:id", isAuthenticated, userController.deleteDoctor);
-userRouter.delete("updateDoc/:id", isAuthenticated, userController.updateDoctor);
 
 //===> admin
 userRouter.put("/byadmin/:id", isAuthenticated, userController.updateUserByAdmin);

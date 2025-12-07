@@ -10,6 +10,7 @@ import { generateOTP } from "../../utils/otp.js";
 import Token from "../../../database/models/token.model.js";
 import { AppError, catchAsyncError } from "../../utils/catch-error.js";
 import { verifyGoogleToken } from "../../utils/oAuth/googleAuth.js";
+
 export const signup = catchAsyncError(async (req, res, next) => {
   let { userName, email, password, Cpassword, gender, mobileNumber } = req.body;
 

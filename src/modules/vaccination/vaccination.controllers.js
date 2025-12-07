@@ -97,7 +97,7 @@ export const getVaccinationOfCategory = async (req, res) => {
     filter.categories = category; 
   }
   const vaccinations = await Vaccination.find(filter);
-  res.json(vaccinations);
+  res.status(200).json({ success: true, data: vaccinations });
 };
 
 //==> hard Delete

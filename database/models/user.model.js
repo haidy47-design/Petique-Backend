@@ -59,6 +59,10 @@ let userSchema = new mongoose.Schema(
         public_id: process.env.PUBLIC_ID,
       },
     },
+    doctorSpecialist: {
+      type: String,
+      enum: ["generalVeterinary", "surgery", "dermatology", "dentistry", ],
+    },
     address: String,
     otpCode: String,
     otpExpire: Date,
