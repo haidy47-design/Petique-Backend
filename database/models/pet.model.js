@@ -17,8 +17,14 @@ const petSchema = new mongoose.Schema(
     vaccinationHistory: [
       {
         vaccine: { type: mongoose.Schema.Types.ObjectId, ref: "Vaccination" },
-        date: Date,
-        nextDose: Date,
+        doseNumber: { type: Number, required: true },
+        date: { type: Date, required: true },
+        nextDose: { type: Date },
+        status: {
+          type: String,
+          enum: ["scheduled", "completed", "overdue"],
+          default: "Scheduled",
+        },
       },
     ],
 

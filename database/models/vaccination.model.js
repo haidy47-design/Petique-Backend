@@ -4,7 +4,8 @@ const doseSchema = new mongoose.Schema(
   {
     doseNumber: { type: Number, required: true },
     ageInWeeks: { type: Number, required: true },
-    repeatAfterDays: { type: Number, required: true },
+    repeatAfterDays: { type: Number },
+    recurring: { type: Boolean },
   },
   { _id: false }
 );

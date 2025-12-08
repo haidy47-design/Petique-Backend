@@ -6,11 +6,38 @@ import { uploadSingleFile } from "../../utils/fileUpload/multer-cloud.js";
 const petRouter = Router();
 
 petRouter.get("/", isAuthenticated, petControllers.getAllPets);
+petRouter.get(
+  "/pet-vaccine",
+  isAuthenticated,
+  petControllers.getVaccinationRecords
+);
+
 petRouter.get("/userPet", isAuthenticated, petControllers.getUserPets);
-petRouter.get("/count-cat", isAuthenticated, petControllers.countPetsPerCategory);
+petRouter.get(
+  "/count-cat",
+  isAuthenticated,
+  petControllers.countPetsPerCategory
+);
+
+petRouter.get(
+  "/:id/specific-vaccines",
+  isAuthenticated,
+  petControllers.getPetVaccinations
+);
+
 petRouter.get("/:id", petControllers.getPetById);
 
-petRouter.post("/", isAuthenticated, uploadSingleFile("image"), petControllers.addPet);
+petRouter.post(
+  "/",
+  isAuthenticated,
+  uploadSingleFile("image"),
+  petControllers.addPet
+);
+petRouter.post(
+  "/:id/vaccination",
+  isAuthenticated,
+  petControllers.addVaccinationToPet
+);
 
 petRouter.put(
   "/:id",

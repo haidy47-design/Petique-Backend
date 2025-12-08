@@ -25,4 +25,9 @@ vaccinationRouter.put(
   vaccinationControllers.softDeleteVaccination
 );
 
+vaccinationRouter.delete(
+  "/delete/:id",
+  isAuthenticated,
+  vaccinationControllers.deleteVaccination
+);
 export default vaccinationRouter;

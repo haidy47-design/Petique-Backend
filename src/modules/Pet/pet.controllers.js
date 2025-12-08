@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Pet from "../../../database/models/pet.model.js";
 import { AppError, catchAsyncError } from "../../utils/catch-error.js";
 import cloudinary from "../../utils/fileUpload/cloudinary.js";
@@ -108,11 +109,14 @@ export const getAllPets = catchAsyncError(async (req, res, next) => {
 // ===> Get a specific Pet
 export const getPetById = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return next(new AppError("Invalid pet ID format", 400));
+  }
   const pet = await Pet.findById(id)
     .populate("petOwner", "userName email")
     .populate("category", "name")
     .populate("vaccinationHistory.vaccine", "name categories");
-
+  
   if (!pet) return next(new AppError("Pet not found", 404));
 
   res.status(200).json({ success: true, data: pet });
@@ -217,5 +221,118 @@ export const countPetsPerCategory = catchAsyncError(async (req, res, next) => {
     success: true,
     message: "Pets count per category",
     data: result
+  });
+});
+
+// ===> Add vaccination to a pet
+export const addVaccinationToPet = catchAsyncError(async (req, res, next) => {
+  const { id } = req.params; 
+  const { vaccine, doseNumber, date, nextDose, status } = req.body;
+
+  const pet = await Pet.findById(id);
+  if (!pet) return next(new AppError("Pet not found", 404));
+
+  // if (
+  //   pet.petOwner.toString() !== req.authUser._id.toString() &&
+  //   req.authUser.role !== "admin"
+  // ) {
+  //   return next(new AppError("Not authorized to update this pet", 403));
+  // }
+
+  const newVaccination = {
+    vaccine,
+    doseNumber,
+    date,
+    nextDose,
+    status,
+  };
+
+  pet.vaccinationHistory.push(newVaccination);
+
+  const updatedPet = await pet.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Vaccination added successfully",
+    data: updatedPet,
+  });
+});
+
+// ===> to get vaccination for pets 
+export const getVaccinationRecords = catchAsyncError(async (req, res, next) => {
+  const pets = await Pet.find({ isDeleted: false })
+    .populate("vaccinationHistory.vaccine", "name")
+    .select("name image vaccinationHistory");
+
+  const records = [];
+
+  pets.forEach(pet => {
+    pet.vaccinationHistory.forEach(history => {
+      records.push({
+        petId: pet._id,
+        petName: pet.name,
+        petImage: pet.image?.secure_url,
+        vaccineName: history.vaccine?.name,
+        doseNumber: history.doseNumber,
+        date: history.date,
+        nextDose: history.nextDose,
+        status: history.status,
+      });
+    });
+  });
+
+  res.status(200).json({
+    success: true,
+    count: records.length,
+    data: records
+  });
+});
+
+// ===> get all vaccination records for a specific pet
+export const getPetVaccinations = catchAsyncError(async (req, res, next) => {
+  const { id } = req.params;
+
+  // ===> find the pet + populate vaccine data
+  const pet = await Pet.findById(id)
+    .select("name image vaccinationHistory")
+    .populate({
+      path: "vaccinationHistory.vaccine",
+      select: "name categories doses",
+      populate: {
+        path: "categories",
+        select: "name",
+      },
+    });
+
+  if (!pet) return next(new AppError("Pet not found", 404));
+
+  // ===> If pet exists but no vaccination records
+  if (!pet.vaccinationHistory || pet.vaccinationHistory.length === 0) {
+    return res.status(200).json({
+      success: true,
+      message: "This pet has no vaccination records",
+      data: [],
+    });
+  }
+
+  // ===> format output
+  const records = pet.vaccinationHistory.map((v) => ({
+    vaccineId: v.vaccine?._id,
+    vaccineName: v.vaccine?.name,
+    categories: v.vaccine?.categories?.map(c => c.name),
+    doses: v.vaccine?.doses,
+    doseNumber: v.doseNumber,
+    date: v.date,
+    nextDose: v.nextDose,
+    status: v.status,
+  }));
+
+  res.status(200).json({
+    success: true,
+    message: "Pet vaccination records retrieved successfully",
+    petName: pet.name,
+    petImage: pet.image?.secure_url,
+    count: records.length,
+    data: records,
   });
 });
