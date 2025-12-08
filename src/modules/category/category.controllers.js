@@ -158,7 +158,17 @@ export const getAllCategories = catchAsyncError(async (req, res, next) => {
       select: ["userName", "address", "userName", "mobileNumber", "image"],
     }
   );
-  res.status(200).json({ message: "Categories are : ", data: categories });
+  const productCounts = await getCategoryProductCount();
+  const mergedCategories = categories.map((cat) => {
+    const foundCount = productCounts.find(
+      (pc) => pc._id === cat._id.toString()
+    );
+    const count = foundCount ? foundCount.count : 0;
+    return { ...cat.toObject(), productCount: count };
+  });
+  res
+    .status(200)
+    .json({ message: "Categories are : ", data: mergedCategories });
 });
 
 export const deleteCategoryCloud = catchAsyncError(async (req, res, next) => {
