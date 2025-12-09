@@ -15,6 +15,7 @@ import animalCategoryRouter from './animalCategory/animalCategory.routers.js';
 import reviewRouter from './reviews/review.routers.js';
 import clinicReviewRouter from './clinicReview/clinicReviews.routers.js';
 import doctorRouter from './doctor/doctor.routers.js';
+import couponRouter from './coupon/coupon.routers.js';
 
 export {
   authRouter,
@@ -33,5 +34,6 @@ export {
   animalCategoryRouter,
   reviewRouter,
   clinicReviewRouter,
-  doctorRouter
+  doctorRouter,
+  couponRouter
 };
