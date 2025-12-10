@@ -74,6 +74,11 @@ reservationRouter.get(
   reservationControllers.getMostActiveDoctors
 );
 
+reservationRouter.get(
+  "/today",
+  isAuthenticated,
+  reservationControllers.getTodayReservations
+);
 // ===> FILTER 
 reservationRouter.get(
   "/filter/search",

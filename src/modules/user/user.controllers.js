@@ -276,52 +276,49 @@ export const updateUserByAdmin = catchAsyncError(async (req, res, next) => {
     data: updatedUser,
   });
 });
+
 export const deleteUser = catchAsyncError(async (req, res, next) => {
   const { id: userIdFromParams } = req.params;
   const authUser = req.authUser;
 
-  const idToDelete =
-    authUser.role === roles.ADMIN && userIdFromParams
-      ? userIdFromParams
-      : authUser._id;
+  if (!userIdFromParams) {
+    return next(new AppError("User ID is required to delete a user", 400));
+  }
 
-  const user = await User.findById(idToDelete);
+  if (userIdFromParams === authUser._id.toString()) {
+    return next(new AppError("You cannot delete your own account", 403));
+  }
+
+  const user = await User.findById(userIdFromParams);
   if (!user) return next(new AppError(messages.user.notFound, 404));
 
-  const deletedUser = await User.deleteOne({ _id: idToDelete });
-  if (!deletedUser) {
-    return next(new AppError(messages.user.failToDelete, 500));
-  }
+  await User.deleteOne({ _id: userIdFromParams });
 
   res.status(200).json({
     message: messages.user.deletedSuccessfully,
     success: true,
   });
 });
-
 export const softDeleteUser = catchAsyncError(async (req, res, next) => {
   const { id: userIdFromParams } = req.params;
   const authUser = req.authUser;
 
-  const idToDelete =
-    authUser.role === roles.ADMIN && userIdFromParams
-      ? userIdFromParams
-      : authUser._id;
+  if (!userIdFromParams) {
+    return next(new AppError("User ID is required to delete a user", 400));
+  }
 
-  const user = await User.findById(idToDelete);
+  if (userIdFromParams === authUser._id.toString()) {
+    return next(new AppError("You cannot delete your own account", 403));
+  }
+
+  const user = await User.findById(userIdFromParams);
   if (!user) return next(new AppError(messages.user.notFound, 404));
 
   const softDeletedUser = await User.findByIdAndUpdate(
-    idToDelete,
+    userIdFromParams,
     { status: status.DELETED },
     { new: true }
   );
-
-  if (!softDeletedUser) {
-    return next(new AppError(messages.user.failToDelete, 500));
-  }
-
-  softDeletedUser.password = undefined;
 
   res.status(200).json({
     message: messages.user.deletedSuccessfully,
@@ -437,4 +434,3 @@ export const getDemographics = catchAsyncError(async (req, res, next) => {
     },
   });
 });
-

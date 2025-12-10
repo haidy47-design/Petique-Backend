@@ -580,3 +580,24 @@ export const filterReservations = catchAsyncError(async (req, res, next) => {
     data: reservations,
   });
 });
+
+// ======================= GET RESERVATIONS FOR TODAY ======================== //
+export const getTodayReservations = catchAsyncError(async (req, res, next) => {
+  const today = new Date().toISOString().split("T")[0]; // "2025-01-10"
+
+  const reservations = await Reservation.find({
+    date: today,
+    isDeleted: false,
+  })
+    .sort({ timeSlot: 1 })
+    .populate("petOwner", ["userName", "email", "mobileNumber"])
+    .populate("pet", ["name", "type"])
+    .populate("service", ["name", "price"])
+    .populate("doctor", ["userName", "email"]);
+
+  res.status(200).json({
+    success: true,
+    count: reservations.length,
+    data: reservations,
+  });
+});

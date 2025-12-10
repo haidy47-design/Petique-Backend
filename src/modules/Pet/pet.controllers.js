@@ -116,7 +116,7 @@ export const getPetById = catchAsyncError(async (req, res, next) => {
     .populate("petOwner", "userName email")
     .populate("category", "name")
     .populate("vaccinationHistory.vaccine", "name categories");
-  
+
   if (!pet) return next(new AppError("Pet not found", 404));
 
   res.status(200).json({ success: true, data: pet });
@@ -190,21 +190,21 @@ export const getUserPets = catchAsyncError(async (req, res, next) => {
 export const countPetsPerCategory = catchAsyncError(async (req, res, next) => {
   const result = await Pet.aggregate([
     {
-      $match: { isDeleted: false }
+      $match: { isDeleted: false },
     },
     {
       $group: {
         _id: "$category",
-        totalPets: { $sum: 1 }
-      }
+        totalPets: { $sum: 1 },
+      },
     },
     {
       $lookup: {
         from: "animalcategories",
         localField: "_id",
         foreignField: "_id",
-        as: "category"
-      }
+        as: "category",
+      },
     },
     { $unwind: "$category" },
     {
@@ -212,21 +212,21 @@ export const countPetsPerCategory = catchAsyncError(async (req, res, next) => {
         _id: 0,
         categoryId: "$category._id",
         categoryName: "$category.name",
-        totalPets: 1
-      }
-    }
+        totalPets: 1,
+      },
+    },
   ]);
 
   res.status(200).json({
     success: true,
     message: "Pets count per category",
-    data: result
+    data: result,
   });
 });
 
 // ===> Add vaccination to a pet
 export const addVaccinationToPet = catchAsyncError(async (req, res, next) => {
-  const { id } = req.params; 
+  const { id } = req.params;
   const { vaccine, doseNumber, date, nextDose, status } = req.body;
 
   const pet = await Pet.findById(id);
@@ -258,19 +258,21 @@ export const addVaccinationToPet = catchAsyncError(async (req, res, next) => {
   });
 });
 
-// ===> to get vaccination for pets 
+// ===> to get vaccination for pets
 export const getVaccinationRecords = catchAsyncError(async (req, res, next) => {
   const pets = await Pet.find({ isDeleted: false })
     .populate("vaccinationHistory.vaccine", "name")
-    .select("name image vaccinationHistory");
+    .populate("category", "name")
+    .select("name image vaccinationHistory category");
 
   const records = [];
 
-  pets.forEach(pet => {
-    pet.vaccinationHistory.forEach(history => {
+  pets.forEach((pet) => {
+    pet.vaccinationHistory.forEach((history) => {
       records.push({
         petId: pet._id,
         petName: pet.name,
+        category: pet.category?.name,
         petImage: pet.image?.secure_url,
         vaccineName: history.vaccine?.name,
         doseNumber: history.doseNumber,
@@ -284,7 +286,7 @@ export const getVaccinationRecords = catchAsyncError(async (req, res, next) => {
   res.status(200).json({
     success: true,
     count: records.length,
-    data: records
+    data: records,
   });
 });
 
@@ -319,7 +321,7 @@ export const getPetVaccinations = catchAsyncError(async (req, res, next) => {
   const records = pet.vaccinationHistory.map((v) => ({
     vaccineId: v.vaccine?._id,
     vaccineName: v.vaccine?.name,
-    categories: v.vaccine?.categories?.map(c => c.name),
+    categories: v.vaccine?.categories?.map((c) => c.name),
     doses: v.vaccine?.doses,
     doseNumber: v.doseNumber,
     date: v.date,

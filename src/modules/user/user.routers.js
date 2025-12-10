@@ -32,7 +32,7 @@ userRouter.put(
 );
 
 userRouter.delete("/", isAuthenticated, userController.deleteUserByUser);
-userRouter.delete("/softDelete", isAuthenticated, userController.softDeleteUserByUser);
+userRouter.put("/softDelete", isAuthenticated, userController.softDeleteUserByUser);
 
 //===> admin
 userRouter.put("/byadmin/:id", isAuthenticated, userController.updateUserByAdmin);
