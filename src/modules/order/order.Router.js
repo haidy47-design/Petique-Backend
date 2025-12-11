@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { isAuthenticated, isAuthorized } from "./../../middelwares/auth.js";
 import * as orderControllers from "./order.controllers.js";
-import { roles } from "../../utils/constant/enums.js";
+import { roles } from './../../utils/constant/enums.js';
 
 const orderRouter = Router();
 orderRouter.get("/", isAuthenticated, orderControllers.getUserOrders);
@@ -33,7 +33,7 @@ orderRouter.put("/:id", isAuthenticated, orderControllers.updateOrder);
 orderRouter.put(
   "/status/:id",
   isAuthenticated,
-  isAuthorized([roles.ADMIN]),
+  isAuthorized([roles]),
   orderControllers.updateOrderStatus
 );
 orderRouter.put(

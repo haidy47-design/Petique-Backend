@@ -8,7 +8,7 @@ import { ApiFeature } from "../../utils/file-feature.js";
 import { roles } from "../../utils/constant/enums.js";
 import { TIME_SLOTS } from "../../utils/constant/timeSlots.js";
 
-  // ===> Create reservation
+// ===> Create reservation
 export const createReservation = catchAsyncError(async (req, res, next) => {
   const { pet, service, doctor, date, timeSlot, notes } = req.body;
 
@@ -193,7 +193,7 @@ export const getReservations = catchAsyncError(async (req, res, next) => {
     Reservation.find({ isDeleted: { $ne: true } })
       .populate("petOwner", ["userName", "email", "mobileNumber"])
       .populate("pet", ["name", "age", "type"])
-      .populate("service", ["name", "price"])
+      .populate("service", ["title", "priceRange"])
       .populate("doctor", ["userName", "email"]),
     req.query
   )
@@ -232,7 +232,7 @@ export const getSpecificReservation = catchAsyncError(
     const reservation = await Reservation.findById(id)
       .populate("petOwner", ["userName", "email"])
       .populate("pet", ["name", "type"])
-      .populate("service", ["name", "price"])
+      .populate("service", ["title", "priceRange"])
       .populate("doctor", ["userName", "email"]);
 
     if (!reservation) return next(new AppError("Reservation not found", 404));
@@ -592,7 +592,7 @@ export const getTodayReservations = catchAsyncError(async (req, res, next) => {
     .sort({ timeSlot: 1 })
     .populate("petOwner", ["userName", "email", "mobileNumber"])
     .populate("pet", ["name", "type"])
-    .populate("service", ["name", "price"])
+    .populate("service", ["title", "priceRange"])
     .populate("doctor", ["userName", "email"]);
 
   res.status(200).json({
