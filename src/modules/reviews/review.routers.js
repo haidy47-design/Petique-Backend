@@ -40,14 +40,12 @@ reviewRouter.get(
 reviewRouter.delete(
   "/:id",
   isAuthenticated,
-  isAuthorized([roles.ADMIN]),
   reviewController.deleteReview
 );
 
 reviewRouter.put(
   "/:id",
   isAuthenticated,
-  isAuthorized([roles.ADMIN]),
   reviewController.softDeleteReview
 );
 export default reviewRouter;

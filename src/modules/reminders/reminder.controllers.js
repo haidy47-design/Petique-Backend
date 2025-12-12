@@ -64,7 +64,7 @@ export const getUserReminders = catchAsyncError(async (req, res, next) => {
   });
 
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.size) || 10;
+  const limit = parseInt(req.query.size) || 100;
   const numberOfPages = Math.ceil(totalDocuments / limit);
 
   res.status(200).json({

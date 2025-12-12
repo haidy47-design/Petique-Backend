@@ -7,8 +7,15 @@ import { ApiFeature } from "../../utils/file-feature.js";
 
 // =======> add services
 export const addService = catchAsyncError(async (req, res, next) => {
-  const { title, description, priceRange, preparations, benefits, tips } =
-    req.body;
+  const {
+    title,
+    description,
+    priceRange,
+    preparations,
+    benefits,
+    tips,
+    duration,
+  } = req.body;
 
   if (!req.files?.image || req.files.image.length === 0) {
     return next(new AppError("Service image is required", 400));
@@ -41,6 +48,7 @@ export const addService = catchAsyncError(async (req, res, next) => {
     updatedBy: req.authUser._id,
     benefits,
     tips,
+    duration,
   });
 
   await newService.save();
@@ -53,14 +61,6 @@ export const addService = catchAsyncError(async (req, res, next) => {
   });
 });
 
-// =======> get all services
-// export const getAllServices = catchAsyncError(async (req, res) => {
-//   const services = await Service.find({ isDeleted: { $ne: true } }).populate({
-//     path: "createdBy",
-//     select: ["userName", "email"],
-//   });
-//   res.status(200).json({ success: true, message: "all services: ", data: services });
-// });
 // ===> Get all services WITH API FEATURE
 export const getAllServices = catchAsyncError(async (req, res) => {
   const apiFeature = new ApiFeature(
@@ -83,7 +83,7 @@ export const getAllServices = catchAsyncError(async (req, res) => {
   });
 
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.size) || 10;
+  const limit = parseInt(req.query.size) || 100;
   const numberOfPages = Math.ceil(totalDocuments / limit);
 
   res.status(200).json({
@@ -157,6 +157,7 @@ export const updateService = catchAsyncError(async (req, res, next) => {
     "preparations",
     "benefits",
     "tips",
+    "duration",
   ];
   updatableFields.forEach((field) => {
     if (req.body[field] !== undefined) service[field] = req.body[field];

@@ -123,7 +123,7 @@ export const getCategories = catchAsyncError(async (req, res, next) => {
   });
 
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.size) || 10;
+  const limit = parseInt(req.query.size) || 100;
   const numberOfPages = Math.ceil(totalDocuments / limit);
 
   return res.json({
@@ -249,7 +249,7 @@ export const getProductsByCategoryId = catchAsyncError(
 
     const products = await apiFeature.mongooseQuery;
     const currentPage = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
+    const limit = Number(req.query.limit) || 100;
     const numberOfPages = Math.ceil(totalProducts / limit);
     const prevPage = currentPage > 1 ? currentPage - 1 : null;
     const nextPage = currentPage < numberOfPages ? currentPage + 1 : null;

@@ -211,7 +211,7 @@ export const getSpeCificProduct = catchAsyncError(async (req, res, next) => {
 
 //===> get products but with api feature
 export const getProducts = catchAsyncError(async (req, res, next) => {
-  const { category, page = 1, size = 20 } = req.query;
+  const { category, page = 1, size = 100 } = req.query;
 
   const filter = { isDeleted: { $ne: true } };
 

@@ -207,7 +207,7 @@ export const getReservations = catchAsyncError(async (req, res, next) => {
   const total = await Reservation.countDocuments({ isDeleted: { $ne: true } });
 
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.size) || 10;
+  const limit = parseInt(req.query.size) || 100;
   const numberOfPages = Math.ceil(total / limit);
 
   res.status(200).json({
@@ -248,10 +248,6 @@ export const softDeleteReservation = catchAsyncError(async (req, res, next) => {
   const reservation = await Reservation.findById(id);
   if (!reservation) return next(new AppError("Reservation not found", 404));
 
-  // Only owner can soft delete
-  if (reservation.petOwner.toString() !== req.authUser._id.toString())
-    return next(new AppError("You cannot delete this reservation", 403));
-
   if (reservation.isDeleted)
     return next(new AppError("Reservation already deleted", 400));
 
@@ -274,10 +270,6 @@ export const deleteReservation = catchAsyncError(async (req, res, next) => {
 
   const reservation = await Reservation.findById(id);
   if (!reservation) return next(new AppError("Reservation not found", 404));
-
-  // only owner can delete
-  if (reservation.petOwner.toString() !== req.authUser._id.toString())
-    return next(new AppError("You cannot delete this reservation", 403));
 
   const deleted = await Reservation.findByIdAndDelete(id);
 
