@@ -3,6 +3,7 @@ import Pet from "../../../database/models/pet.model.js";
 import { AppError, catchAsyncError } from "../../utils/catch-error.js";
 import cloudinary from "../../utils/fileUpload/cloudinary.js";
 import { deleteCloud } from "../../utils/fileUpload/file-functions.js";
+import vaccinationModel from "../../../database/models/vaccination.model.js";
 
 // ===> Add a new Pet
 export const addPet = catchAsyncError(async (req, res, next) => {
@@ -336,5 +337,57 @@ export const getPetVaccinations = catchAsyncError(async (req, res, next) => {
     petImage: pet.image?.secure_url,
     count: records.length,
     data: records,
+  });
+});
+
+// ===> add vaccination to specific pet
+export const vaccinatePet = catchAsyncError(async (req, res, next) => {
+  const { id } = req.params;
+  const { vaccineId, doseNumber, date } = req.body;
+
+  const pet = await Pet.findById(id);
+  if (!pet) return next(new AppError("Pet not found", 404));
+
+  const vaccine = await vaccinationModel.findById(vaccineId);
+  if (!vaccine) return next(new AppError("Vaccine not found", 404));
+
+  const selectedDose = vaccine.doses.find((d) => d.doseNumber === doseNumber);
+  if (!selectedDose)
+    return next(new AppError("Dose not found in vaccine", 400));
+
+  // ===> handle next dose
+  let nextDose = null;
+
+  const currentIndex = vaccine.doses.findIndex(
+    (d) => d.doseNumber === doseNumber
+  );
+
+  const nextDoseObj = vaccine.doses[currentIndex + 1];
+
+  if (nextDoseObj) {
+    //==> next scheduled dose
+    nextDose = new Date(date);
+    nextDose.setDate(nextDose.getDate() + nextDoseObj.repeatAfterDays);
+  } else if (selectedDose.recurring && selectedDose.repeatAfterDays) {
+    //==> This vaccine repeats every year or period
+    nextDose = new Date(date);
+    nextDose.setDate(nextDose.getDate() + selectedDose.repeatAfterDays);
+  }
+
+  // ==> add the pet history
+  pet.vaccinationHistory.push({
+    vaccine: vaccineId,
+    doseNumber: doseNumber,
+    date: date,
+    nextDose: nextDose,
+    status: nextDose ? "scheduled" : "completed",
+  });
+
+  await pet.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Vaccination added",
+    data: pet,
   });
 });

@@ -18,6 +18,7 @@ petRouter.get(
   isAuthenticated,
   petControllers.countPetsPerCategory
 );
+petRouter.post("/:id/vaccinate", isAuthenticated, petControllers.vaccinatePet);
 
 petRouter.get(
   "/:id/specific-vaccines",
