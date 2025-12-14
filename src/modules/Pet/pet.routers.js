@@ -50,5 +50,18 @@ petRouter.put(
 petRouter.put("/soft/:id", isAuthenticated, petControllers.softDeletePet);
 
 petRouter.delete("/:id", isAuthenticated, petControllers.deletePet);
+// ===> Update vaccination
+petRouter.put(
+  "/:petId/vaccination/:vaccinationId",
+  isAuthenticated,
+  petControllers.updatePetVaccination
+);
+
+// ===> Delete vaccination
+petRouter.delete(
+  "/:petId/vaccination/:vaccinationId",
+  isAuthenticated,
+  petControllers.deletePetVaccination
+);
 
 export default petRouter;

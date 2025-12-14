@@ -272,10 +272,12 @@ export const getVaccinationRecords = catchAsyncError(async (req, res, next) => {
     pet.vaccinationHistory.forEach((history) => {
       records.push({
         petId: pet._id,
+        vaccinationId: history._id,
         petName: pet.name,
         category: pet.category?.name,
         petImage: pet.image?.secure_url,
         vaccineName: history.vaccine?.name,
+        vaccineId: history.vaccine?._id,
         doseNumber: history.doseNumber,
         date: history.date,
         nextDose: history.nextDose,
@@ -355,7 +357,7 @@ export const vaccinatePet = catchAsyncError(async (req, res, next) => {
   if (!selectedDose)
     return next(new AppError("Dose not found in vaccine", 400));
 
-  // ===> handle next dose
+  // ===== Compute next dose =====
   let nextDose = null;
 
   const currentIndex = vaccine.doses.findIndex(
@@ -364,23 +366,49 @@ export const vaccinatePet = catchAsyncError(async (req, res, next) => {
 
   const nextDoseObj = vaccine.doses[currentIndex + 1];
 
-  if (nextDoseObj) {
-    //==> next scheduled dose
+  if (nextDoseObj?.repeatAfterDays) {
     nextDose = new Date(date);
     nextDose.setDate(nextDose.getDate() + nextDoseObj.repeatAfterDays);
   } else if (selectedDose.recurring && selectedDose.repeatAfterDays) {
-    //==> This vaccine repeats every year or period
     nextDose = new Date(date);
     nextDose.setDate(nextDose.getDate() + selectedDose.repeatAfterDays);
   }
 
-  // ==> add the pet history
+  // ===== Compute status =====
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const vaccinationDate = new Date(date + "T00:00:00");
+  vaccinationDate.setHours(0, 0, 0, 0);
+
+  let status;
+
+  // Future reservation
+  if (vaccinationDate > today) {
+    status = "scheduled";
+  }
+  // Given today or in the past
+  else {
+    status = "completed";
+  }
+
+  // Missed next dose
+  if (nextDose) {
+    const nextDoseDate = new Date(nextDose);
+    nextDoseDate.setHours(0, 0, 0, 0);
+
+    if (nextDoseDate < today) {
+      status = "overdue";
+    }
+  }
+
+  // ===== Save history =====
   pet.vaccinationHistory.push({
     vaccine: vaccineId,
-    doseNumber: doseNumber,
-    date: date,
-    nextDose: nextDose,
-    status: nextDose ? "scheduled" : "completed",
+    doseNumber,
+    date,
+    nextDose,
+    status,
   });
 
   await pet.save();
@@ -389,5 +417,90 @@ export const vaccinatePet = catchAsyncError(async (req, res, next) => {
     success: true,
     message: "Vaccination added",
     data: pet,
+  });
+});
+
+// ===> Update specific vaccination in pet
+export const updatePetVaccination = catchAsyncError(async (req, res, next) => {
+  const { petId, vaccinationId } = req.params;
+  const { doseNumber, date } = req.body;
+
+  const pet = await Pet.findById(petId);
+  if (!pet) return next(new AppError("Pet not found", 404));
+
+  const vaccination = pet.vaccinationHistory.id(vaccinationId);
+  if (!vaccination)
+    return next(new AppError("Vaccination record not found", 404));
+
+  const vaccine = await vaccinationModel.findById(vaccination.vaccine);
+  if (!vaccine) return next(new AppError("Vaccine not found", 404));
+
+  const selectedDose = vaccine.doses.find((d) => d.doseNumber === doseNumber);
+  if (!selectedDose)
+    return next(new AppError("Dose not found in vaccine", 400));
+
+  // ===== Compute next dose =====
+  let nextDose = null;
+
+  const currentIndex = vaccine.doses.findIndex(
+    (d) => d.doseNumber === doseNumber
+  );
+  const nextDoseObj = vaccine.doses[currentIndex + 1];
+
+  if (nextDoseObj?.repeatAfterDays) {
+    nextDose = new Date(date);
+    nextDose.setDate(nextDose.getDate() + nextDoseObj.repeatAfterDays);
+  } else if (selectedDose.recurring && selectedDose.repeatAfterDays) {
+    nextDose = new Date(date);
+    nextDose.setDate(nextDose.getDate() + selectedDose.repeatAfterDays);
+  }
+
+  // ===== Compute status =====
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const vaccinationDate = new Date(date + "T00:00:00");
+  vaccinationDate.setHours(0, 0, 0, 0);
+
+  let status = vaccinationDate > today ? "scheduled" : "completed";
+
+  if (nextDose) {
+    const nextDoseDate = new Date(nextDose);
+    nextDoseDate.setHours(0, 0, 0, 0);
+    if (nextDoseDate < today) status = "overdue";
+  }
+
+  // ===== Update subdocument =====
+  vaccination.doseNumber = doseNumber;
+  vaccination.date = date;
+  vaccination.nextDose = nextDose;
+  vaccination.status = status;
+
+  await pet.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Vaccination updated successfully",
+    data: pet,
+  });
+});
+
+// ===> Hard delete vaccination from pet
+export const deletePetVaccination = catchAsyncError(async (req, res, next) => {
+  const { petId, vaccinationId } = req.params;
+
+  const pet = await Pet.findById(petId);
+  if (!pet) return next(new AppError("Pet not found", 404));
+
+  const vaccination = pet.vaccinationHistory.id(vaccinationId);
+  if (!vaccination)
+    return next(new AppError("Vaccination record not found", 404));
+
+  vaccination.deleteOne();
+  await pet.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Vaccination deleted successfully",
   });
 });

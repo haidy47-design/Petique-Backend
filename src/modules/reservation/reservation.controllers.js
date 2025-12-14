@@ -97,17 +97,15 @@ export const updateReservation = catchAsyncError(async (req, res, next) => {
   const reservation = await Reservation.findById(id);
   if (!reservation) return next(new AppError("Reservation not found", 404));
 
-  // only owner can update
-  if (reservation.petOwner.toString() !== req.authUser._id.toString())
-    return next(new AppError("You cannot update this reservation", 403));
+  const { pet, service, doctor, date, timeSlot, notes, status, paymentStatus } =
+    req.body;
 
-  const { pet, service, doctor, date, timeSlot, notes, status } = req.body;
+  if (paymentStatus) reservation.paymentStatus = paymentStatus;
 
   // validate pet
   if (pet) {
     const petExist = await Pet.findOne({
       _id: pet,
-      petOwner: req.authUser._id,
       isDeleted: false,
     });
     if (!petExist) return next(new AppError("Pet not found", 404));
@@ -127,7 +125,9 @@ export const updateReservation = catchAsyncError(async (req, res, next) => {
   }
 
   // validate doctor
-  if (doctor) {
+  if (doctor === null || doctor === "") {
+    reservation.doctor = null;
+  } else if (doctor) {
     const doctorExist = await User.findOne({
       _id: doctor,
       role: roles.DOCTORS,
@@ -139,11 +139,11 @@ export const updateReservation = catchAsyncError(async (req, res, next) => {
   }
 
   // validate date
-  if (date) {
-    const newDate = new Date(date);
-    if (newDate < new Date())
-      return next(new AppError("Reservation date must be in the future", 400));
-    reservation.date = date;
+  const newDate = new Date(date);
+  newDate.setHours(23, 59, 59, 999);
+
+  if (newDate < new Date()) {
+    return next(new AppError("Reservation date must be today or future", 400));
   }
 
   // validate timeSlot
@@ -154,7 +154,7 @@ export const updateReservation = catchAsyncError(async (req, res, next) => {
   }
 
   // check time slot conflict if doctor/date changed
-  if ((doctor || date || timeSlot) && reservation.doctor) {
+  if (reservation.doctor && reservation.date && reservation.timeSlot) {
     const conflict = await Reservation.findOne({
       doctor: reservation.doctor,
       date: reservation.date,
@@ -163,10 +163,11 @@ export const updateReservation = catchAsyncError(async (req, res, next) => {
       isDeleted: false,
     });
 
-    if (conflict)
+    if (conflict) {
       return next(
         new AppError("This time slot is already booked for this doctor", 409)
       );
+    }
   }
 
   if (notes) reservation.notes = notes;

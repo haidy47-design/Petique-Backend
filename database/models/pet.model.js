@@ -23,7 +23,7 @@ const petSchema = new mongoose.Schema(
         status: {
           type: String,
           enum: ["scheduled", "completed", "overdue"],
-          default: "Scheduled",
+          default: "scheduled",
         },
       },
     ],
@@ -53,5 +53,30 @@ petSchema.virtual("medicalRecords", {
   localField: "_id",
   foreignField: "pet",
 });
+
+petSchema.virtual("vaccinationHistoryWithStatus").get(function () {
+    if (!this.vaccinationHistory) return [];
+
+  const now = new Date();
+
+  return this.vaccinationHistory.map((v) => {
+    let computedStatus = v.status;
+
+    if (
+      v.status === "scheduled" &&
+      v.nextDose &&
+      new Date(v.nextDose) < now
+    ) {
+      computedStatus = "overdue";
+    }
+
+    return {
+      ...v.toObject(),
+      status: computedStatus,
+    };
+  });
+});
+
+
 
 export default mongoose.model("Pet", petSchema);

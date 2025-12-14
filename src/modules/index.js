@@ -10,12 +10,13 @@ import petRouter from "./Pet/pet.routers.js";
 import reminderRouter from "./reminders/reminder.routers.js";
 import serviceRouter from "./services/services.routers.js";
 import reservationRouter from "./reservation/reservation.routers.js";
-import vaccinationRouter from './vaccination/vaccination.routers.js';
-import animalCategoryRouter from './animalCategory/animalCategory.routers.js';
-import reviewRouter from './reviews/review.routers.js';
-import clinicReviewRouter from './clinicReview/clinicReviews.routers.js';
-import doctorRouter from './doctor/doctor.routers.js';
-import couponRouter from './coupon/coupon.routers.js';
+import vaccinationRouter from "./vaccination/vaccination.routers.js";
+import animalCategoryRouter from "./animalCategory/animalCategory.routers.js";
+import reviewRouter from "./reviews/review.routers.js";
+import clinicReviewRouter from "./clinicReview/clinicReviews.routers.js";
+import doctorRouter from "./doctor/doctor.routers.js";
+import couponRouter from "./coupon/coupon.routers.js";
+import diseaseRouter from "./disease/disease.router.js";
 
 export {
   authRouter,
@@ -35,5 +36,6 @@ export {
   reviewRouter,
   clinicReviewRouter,
   doctorRouter,
-  couponRouter
+  couponRouter,
+  diseaseRouter,
 };
