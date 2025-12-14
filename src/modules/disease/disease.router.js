@@ -7,7 +7,7 @@ import axios from "axios";
 const diseaseRouter = Router();
 const upload = multer({ dest: "uploads/" }); 
 
-predictRouter.post("/", upload.single("image"), async (req, res) => {
+diseaseRouter.post("/", upload.single("image"), async (req, res) => {
   try {
     const file = req.file;
     if (!file) return res.status(400).json({ message: "No file uploaded" });
