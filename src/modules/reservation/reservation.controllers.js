@@ -594,3 +594,66 @@ export const getTodayReservations = catchAsyncError(async (req, res, next) => {
     data: reservations,
   });
 });
+
+// ======================= USER: GET MY RESERVATIONS ======================== //
+export const getMyReservations = catchAsyncError(async (req, res, next) => {
+  const reservations = await Reservation.find({
+    petOwner: req.authUser._id,
+    isDeleted: false,
+  })
+    .sort({ date: 1 })
+    .populate("pet", ["name", "type", "age"])
+    .populate("service", ["title", "priceRange"])
+    .populate("doctor", ["userName", "email", "mobileNumber"]);
+
+  res.status(200).json({
+    success: true,
+    count: reservations.length,
+    data: reservations,
+  });
+});
+
+// ======================= USER: UPCOMING APPOINTMENTS ======================== //
+export const getMyUpcomingReservations = catchAsyncError(
+  async (req, res, next) => {
+    const today = new Date();
+
+    const reservations = await Reservation.find({
+      petOwner: req.authUser._id,
+      date: { $gte: today },
+      isDeleted: false,
+    })
+      .sort({ date: 1 })
+      .populate("pet")
+      .populate("service")
+      .populate("doctor");
+
+    res.status(200).json({
+      success: true,
+      count: reservations.length,
+      data: reservations,
+    });
+  }
+);
+// ======================= USER: PAST APPOINTMENTS ======================== //
+export const getMyPastReservations = catchAsyncError(
+  async (req, res, next) => {
+    const today = new Date();
+
+    const reservations = await Reservation.find({
+      petOwner: req.authUser._id,
+      date: { $lt: today },
+      isDeleted: false,
+    })
+      .sort({ date: -1 })
+      .populate("pet")
+      .populate("service")
+      .populate("doctor");
+
+    res.status(200).json({
+      success: true,
+      count: reservations.length,
+      data: reservations,
+    });
+  }
+);

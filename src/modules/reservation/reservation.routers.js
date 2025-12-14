@@ -90,6 +90,24 @@ reservationRouter.get(
   isAuthenticated,
   reservationControllers.getReservationsByStatus
 );
+
+reservationRouter.get(
+  "/my-reservations",
+  isAuthenticated,
+  reservationControllers.getMyReservations
+);
+
+reservationRouter.get(
+  "/my-reservations/upcoming",
+  isAuthenticated,
+  reservationControllers.getMyUpcomingReservations
+);
+
+reservationRouter.get(
+  "/my-reservations/past",
+  isAuthenticated,
+  reservationControllers.getMyPastReservations
+);
 //===> reservation
 reservationRouter.get(
   "/:id",
@@ -113,5 +131,6 @@ reservationRouter.delete(
   isAuthenticated,
   reservationControllers.deleteReservation
 );
+
 
 export default reservationRouter;
