@@ -1,7 +1,7 @@
 import { Router } from "express";
 import * as productControllers from "./product.controllers.js";
 import { roles } from "../../utils/constant/enums.js";
-import {  isAuthenticated, isAuthorized } from "../../middelwares/auth.js";
+import { isAuthenticated, isAuthorized } from "../../middelwares/auth.js";
 import { uploadMixFiles } from "../../utils/fileUpload/multer-cloud.js";
 import { validate } from "../../middelwares/validate.js";
 import { addProductVal } from "./product.validation.js";
@@ -50,6 +50,12 @@ productRouter.get(
   isAuthenticated,
   productControllers.getUserPriceSubscriptions
 );
+productRouter.get(
+  "/topSelling",
+  isAuthenticated,
+  productControllers.getTopSellingProducts
+);
+
 productRouter.post(
   "/subscribe-price/:productId",
   isAuthenticated,

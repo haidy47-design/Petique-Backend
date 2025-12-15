@@ -1,4 +1,5 @@
 import Category from "../../../database/models/category.model.js";
+import Order from "../../../database/models/order.model.js";
 import Product from "../../../database/models/product.model.js";
 import { AppError, catchAsyncError } from "../../utils/catch-error.js";
 import { messages } from "../../utils/constant/messages.js";

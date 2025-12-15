@@ -26,6 +26,12 @@ categoryRouter.get(
   categoryControllers.getTrendingCategories
 );
 categoryRouter.get("/analytics/stats", categoryControllers.getCategoryStats);
+categoryRouter.get(
+  "/getRevenues",
+  isAuthenticated,
+  categoryControllers.getRevenueDistribution
+);
+
 categoryRouter.put(
   "/soft/:id",
   isAuthenticated,
