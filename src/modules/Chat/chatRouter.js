@@ -7,39 +7,32 @@ import axios from "axios";
 import { analyzePetImage } from "./chatAi.js";
 
 const chatRouter = Router();
-const uploadImage = multer({ dest: "uploads/" });
-
+const uploadImage = multer({
+  storage: multer.memoryStorage(),
+});
 chatRouter.post("/disease", uploadImage.single("image"), async (req, res) => {
   try {
-    const file = req.file;
-    if (!file) return res.status(400).json({ message: "No file uploaded" });
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
-    // Prepare form-data for Flask
     const form = new FormData();
-    form.append("image", fs.createReadStream(file.path));
+    form.append("image", req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: req.file.mimetype,
+    });
 
-    // Send request to Flask API
-    const flaskResponse = await axios.post(
-      "http://127.0.0.1:5000/predict",
-      form,
-      {
-        headers: form.getHeaders(),
-      }
-    );
+    const flaskResponse = await axios.post(process.env.FLASK_URL, form, {
+      headers: form.getHeaders(),
+    });
 
-    // Delete temp file
-    fs.unlinkSync(file.path);
-
-    // Return Flask response to frontend
     res.json(flaskResponse.data);
   } catch (err) {
-    console.error(err);
     res.status(500).json({
       message: "Error forwarding request to Flask",
       error: err.message,
     });
   }
 });
+
 chatRouter.post("/", upload.single("image"), analyzePetImage);
 
 export default chatRouter;

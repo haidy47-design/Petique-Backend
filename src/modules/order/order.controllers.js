@@ -85,7 +85,7 @@ export const createOrder = catchAsyncError(async (req, res, next) => {
     notes,
     payment,
     coupon: appliedCoupon,
-    status: orderStatus.PENDING,
+    status: orderStatus.PLACED,
   });
 
   // decrease stock
