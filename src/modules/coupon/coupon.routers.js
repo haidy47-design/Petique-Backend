@@ -23,7 +23,7 @@ couponRouter.put(
   couponControllers.updateCoupon
 );
 couponRouter.put(
-  "/:id",
+  "/soft:id",
   isAuthenticated,
   couponControllers.softDeleteCoupon
 );
