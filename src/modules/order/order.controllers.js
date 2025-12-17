@@ -5,22 +5,27 @@ import Order from "../../../database/models/order.model.js";
 import { messages } from "../../utils/constant/messages.js";
 import { AppError, catchAsyncError } from "../../utils/catch-error.js";
 import Coupon from "../../../database/models/coupon.model.js";
-import { couponTypes, orderStatus } from "../../utils/constant/enums.js";
+import {
+  couponTypes,
+  orderStatus,
+  payments,
+} from "../../utils/constant/enums.js";
 import Product from "../../../database/models/product.model.js";
 import { Parser } from "json2csv";
 import PDFDocument from "pdfkit";
+import Stripe from "stripe";
+const stripe = new Stripe(process.env.APIKEYORDER, {
+  apiVersion: "2023-10-16",
+});
 
 export const createOrder = catchAsyncError(async (req, res, next) => {
-  const { fullName, address, phone, couponCode, notes } = req.body;
+  const { fullName, address, phone, couponCode, notes, payment } = req.body;
   const userId = req.authUser._id;
-  let cart = await Cart.findOne({ user: userId }).populate(
+
+  const cart = await Cart.findOne({ user: userId }).populate(
     "products.productId"
   );
-  if (!cart) {
-    cart = await Cart.create({ user: userId, products: [], totalPrice: 0 });
-  }
-
-  if (!cart.products.length)
+  if (!cart || !cart.products.length)
     return next(new AppError(messages.cart.empty, 404));
 
   let orderProducts = [];
@@ -78,23 +83,59 @@ export const createOrder = catchAsyncError(async (req, res, next) => {
     orderPrice,
     finalPrice,
     notes,
+    payment,
     coupon: appliedCoupon,
+    status: orderStatus.PENDING,
   });
 
+  // decrease stock
   for (const item of orderProducts) {
     await Product.findByIdAndUpdate(item.productId, {
       $inc: { stock: -item.quantity },
     });
   }
+
   await Cart.findOneAndUpdate(
     { user: userId },
-    { $set: { products: [], totalPrice: 0 } },
-    { new: true }
+    { products: [], totalPrice: 0 }
   );
 
+  // ================= STRIPE =================
+  if (payment === payments.VISA) {
+    const lineItems = orderProducts.map((product) => ({
+      price_data: {
+        currency: "egp",
+        product_data: {
+          name: product.title,
+        },
+        unit_amount: Math.round(product.finalPrice * 100),
+      },
+      quantity: 1,
+    }));
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "payment",
+      success_url: process.env.SUCCESS_URL,
+      cancel_url: process.env.CANCEL_URL,
+      client_reference_id: order._id.toString(),
+      customer_email: req.authUser.email,
+      line_items: lineItems,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: messages.order.createdSuccessfully,
+      data: {
+        order,
+        checkoutUrl: session.url,
+      },
+    });
+  }
+
   res.status(201).json({
-    message: messages.order.createdSuccessfully,
     success: true,
+    message: messages.order.createdSuccessfully,
     data: order,
   });
 });
@@ -139,7 +180,10 @@ export const updateOrderStatus = catchAsyncError(async (req, res, next) => {
   if (!order) return next(new AppError(messages.order.notFound, 404));
 
   // If order is already cancelled, prevent double-restock
-  if (order.status === orderStatus.CANCELED && status === orderStatus.CANCELED) {
+  if (
+    order.status === orderStatus.CANCELED &&
+    status === orderStatus.CANCELED
+  ) {
     return next(new AppError("Order is already cancelled", 400));
   }
 
@@ -343,9 +387,16 @@ export const getAllOrders = catchAsyncError(async (req, res, next) => {
 
 export const updateOrder = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
-  const { fullName, phone, address, status, finalPrice , notes} = req.body;
+  const { fullName, phone, address, status, finalPrice, notes } = req.body;
 
-  if (!fullName && !phone && !address && !status && !notes && finalPrice === undefined) {
+  if (
+    !fullName &&
+    !phone &&
+    !address &&
+    !status &&
+    !notes &&
+    finalPrice === undefined
+  ) {
     return next(
       new AppError("Please provide at least one field to update", 400)
     );
@@ -362,7 +413,11 @@ export const updateOrder = catchAsyncError(async (req, res, next) => {
     return next(new AppError(messages.order.notFound, 404));
   }
 
-  if (status && status ===  orderStatus.CANCELED && order.status !==  orderStatus.CANCELED) {
+  if (
+    status &&
+    status === orderStatus.CANCELED &&
+    order.status !== orderStatus.CANCELED
+  ) {
     for (const item of order.products) {
       if (item.productId) {
         await Product.findByIdAndUpdate(item.productId._id, {
@@ -526,3 +581,37 @@ export const getOrdersDistributionByStatus = catchAsyncError(
     });
   }
 );
+
+export const createCheckoutSession = catchAsyncError(async (req, res, next) => {
+  const { id } = req.params;
+  // ==> from order
+  let cart = await Cart.findById(id);
+  if (!cart) return next(new AppError(messages.cart.notFound, 404));
+  let totalCartPrice = cart.totalPrice;
+  // // ==> from order
+  let order = await Order.findById(id);
+  if (!order) return next(new AppError(messages.order.notFound, 404));
+  let totalOrderPrice = order.finalPrice;
+  let session = await stripe.checkout.sessions.create({
+    line_items: [
+      {
+        price_data: {
+          currency: "egp",
+          unit_amount: totalCartPrice * 100,
+          product_data: {
+            name: req.authUser.email,
+          },
+        },
+        quantity: 1,
+      },
+    ],
+    mode: "payment",
+    success_url: "http://localhost:5173/profile",
+    cancel_url: "http://localhost:5173/cart",
+    customer_email: req.authUser.email,
+    client_reference_id: req.params.id, // ==> cart id
+    metadata: req.body.shippingAddress,
+  });
+
+  res.status(200).json({ message: "success", data: session });
+});

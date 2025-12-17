@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { orderStatus } from "../../src/utils/constant/enums.js";
+import { orderStatus, payments } from "../../src/utils/constant/enums.js";
 
 const orderSchema = new Schema(
   {
@@ -54,7 +54,8 @@ const orderSchema = new Schema(
 
     payment: {
       type: String,
-      default: "Cash on Delivery",
+      enum: Object.values(payments),
+      default: payments.CASH,
       immutable: true,
     },
 

@@ -34,7 +34,7 @@ export const orderStatus = {
 Object.freeze(orderStatus);
 
 export const payments = {
-  CASH: "cash",
+  CASH: "Cash on Delivery",
   VISA: "visa",
 };
 Object.freeze(payments);

@@ -1,31 +1,33 @@
 export const applyDiscounts = ({ product, discounts, user, cartQty = 1 }) => {
-  let price = product.finalPrice;
+  let price = product.finalPrice; 
+  const now = new Date();
 
   for (const d of discounts) {
-    const now = new Date();
     if (!d.isActive) continue;
     if (d.fromDate && d.fromDate > now) continue;
     if (d.expire && d.expire < now) continue;
 
-    // === Apply Scope
-    if (d.appliesTo === "PRODUCTS" && !d.products.includes(product._id))
-      continue;
+    // ===== Scope 
     if (
-      d.appliesTo === "CATEGORIES" &&
-      !d.categories.includes(product.category)
+      d.appliesTo === "PRODUCTS" &&
+      !d.products.some((id) => id.equals(product._id))
     )
       continue;
 
-    // === Discount Types
-    if (d.type === "FLASH" || d.type === "PERCENTAGE") {
+    if (
+      d.appliesTo === "CATEGORIES" &&
+      !d.categories.some((id) => id.equals(product.category))
+    )
+      continue;
+
+    // ===== Types 
+    if (["FLASH", "PERCENTAGE"].includes(d.type)) {
       price -= price * (d.percentage / 100);
     }
 
-    if (d.type === "BOGO") {
-      if (cartQty >= d.buyQty) {
-        const freeItems = Math.floor(cartQty / d.buyQty) * d.getQty;
-        price = (price * (cartQty - freeItems)) / cartQty;
-      }
+    if (d.type === "BOGO" && cartQty >= d.buyQty) {
+      const freeItems = Math.floor(cartQty / d.buyQty) * d.getQty;
+      price = (price * (cartQty - freeItems)) / cartQty;
     }
 
     if (d.type === "FIRST_ORDER" && user?.orderCount === 0) {
