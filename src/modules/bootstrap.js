@@ -30,7 +30,7 @@ export const bootstrap = (app) => {
   app.use("/reviews", allRouters.reviewRouter);
   app.use("/clinicReview", allRouters.clinicReviewRouter);
   app.use("/doctor", allRouters.doctorRouter);
-  app.use("/disease", allRouters.diseaseRouter);
+  app.use("/disc", allRouters.discountRouter);
 
   app.use((req, res, next) => {
     next(new AppError(`Route Not Found ${req.originalUrl}`, 404));

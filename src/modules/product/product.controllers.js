@@ -75,14 +75,14 @@ export const updateProductCloud = catchAsyncError(async (req, res, next) => {
   if (!product) return next(new AppError(messages.product.notFound, 404));
 
   // Check if current user is the creator
-  if (
-    product.createdBy.toString() !== req.authUser._id.toString() &&
-    req.authUser.role !== "admin"
-  ) {
-    return next(
-      new AppError("You are not authorized to Update this product", 403)
-    );
-  }
+  // if (
+  //   product.createdBy.toString() !== req.authUser._id.toString() &&
+  //   req.authUser.role !== "admin"
+  // ) {
+  //   return next(
+  //     new AppError("You are not authorized to Update this product", 403)
+  //   );
+  // }
 
   let failImages = [];
 

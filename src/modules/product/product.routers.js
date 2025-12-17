@@ -33,6 +33,11 @@ productRouter.get(
   isAuthenticated,
   productControllers.exportProducts
 );
+productRouter.get(
+  "/get-subscribed-prices",
+  isAuthenticated,
+  productControllers.getUserPriceSubscriptions
+);
 productRouter.get("/related/:productId", productControllers.getRelatedProducts);
 
 productRouter.post(
@@ -44,11 +49,6 @@ productRouter.post(
   "/notify-price-drop/:productId",
   isAuthenticated,
   productControllers.notifyUsersPriceDrop
-);
-productRouter.get(
-  "/get-subscribed-prices",
-  isAuthenticated,
-  productControllers.getUserPriceSubscriptions
 );
 productRouter.get(
   "/topSelling",
@@ -71,6 +71,7 @@ productRouter.get(
   isAuthenticated,
   productControllers.contactProductOwner
 );
+
 productRouter
   .route("/:id")
   .get(productControllers.getSpeCificProduct)
@@ -86,13 +87,11 @@ productRouter.get("/related/:productId", productControllers.getRelatedProducts);
 productRouter.put(
   "/soft/:id",
   isAuthenticated,
-  isAuthorized([roles.ADMIN]),
   productControllers.softDeleteProduct
 );
 productRouter.delete(
   "/:id",
   isAuthenticated,
-  isAuthorized([roles.ADMIN]),
   productControllers.deleteProduct
 );
 

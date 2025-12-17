@@ -16,7 +16,7 @@ import reviewRouter from "./reviews/review.routers.js";
 import clinicReviewRouter from "./clinicReview/clinicReviews.routers.js";
 import doctorRouter from "./doctor/doctor.routers.js";
 import couponRouter from "./coupon/coupon.routers.js";
-import diseaseRouter from "./disease/disease.router.js";
+import discountRouter from './discount/discount.routers.js';
 
 export {
   authRouter,
@@ -37,5 +37,5 @@ export {
   clinicReviewRouter,
   doctorRouter,
   couponRouter,
-  diseaseRouter,
+  discountRouter,
 };
