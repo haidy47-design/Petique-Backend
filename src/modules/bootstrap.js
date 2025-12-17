@@ -30,6 +30,7 @@ export const bootstrap = (app) => {
   app.use("/reviews", allRouters.reviewRouter);
   app.use("/clinicReview", allRouters.clinicReviewRouter);
   app.use("/doctor", allRouters.doctorRouter);
+  app.use("/chat", allRouters.chatRouter);
   app.use("/disc", allRouters.discountRouter);
 
   app.use((req, res, next) => {

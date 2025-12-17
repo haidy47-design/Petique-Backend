@@ -1,17 +1,15 @@
 import { Router } from "express";
 import { upload } from "./multer.js";
-import { Router } from "express";
 import multer from "multer";
 import fs from "fs";
 import FormData from "form-data";
 import axios from "axios";
+import { analyzePetImage } from "./chatAi.js";
 
 const chatRouter = Router();
-const upload = multer({ dest: "uploads/" });
+const uploadImage = multer({ dest: "uploads/" });
 
-chatRouter.post("/", upload.single("image"), analyzePetImage);
-
-chatRouter.post("/disease", upload.single("image"), async (req, res) => {
+chatRouter.post("/disease", uploadImage.single("image"), async (req, res) => {
   try {
     const file = req.file;
     if (!file) return res.status(400).json({ message: "No file uploaded" });
@@ -42,5 +40,6 @@ chatRouter.post("/disease", upload.single("image"), async (req, res) => {
     });
   }
 });
+chatRouter.post("/", upload.single("image"), analyzePetImage);
 
 export default chatRouter;
