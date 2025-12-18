@@ -16,7 +16,7 @@ export const addCoupon = catchAsyncError(async (req, res, next) => {
     return next(new AppError("coupon type must be less than 100", 400));
   }
 
-  //prepare data
+  // ===> prepare data
   const coupon = new Coupon({
     code,
     type,
@@ -97,6 +97,17 @@ export const getCoupon = catchAsyncError(async (req, res, next) => {
   });
 });
 
+export const getCouponByCode = catchAsyncError(async (req, res, next) => {
+  const { code } = req.params;
+  const coupon = await Coupon.findOne({ code });
+  if (!coupon) return next(new AppError(messages.coupon.notFound, 404));
+  res.status(200).json({
+    message: messages.coupon.fetchedSuccessfully,
+    success: true,
+    data: coupon,
+  });
+});
+
 export const getCoupons = catchAsyncError(async (req, res, next) => {
   const page = parseInt(req.query.page) || 1;
   const size = parseInt(req.query.size) || 10;
@@ -159,7 +170,12 @@ export const softDeleteCoupon = catchAsyncError(async (req, res, next) => {
   if (!couponExist) return next(new AppError(messages.coupon.notFound, 404));
 
   if (couponExist.isDeleted) {
-    return next(new AppError(messages.coupon.deletedSuccessfully || "Coupon already deleted", 400));
+    return next(
+      new AppError(
+        messages.coupon.deletedSuccessfully || "Coupon already deleted",
+        400
+      )
+    );
   }
 
   couponExist.isDeleted = true;
@@ -167,7 +183,8 @@ export const softDeleteCoupon = catchAsyncError(async (req, res, next) => {
   await couponExist.save();
 
   res.status(200).json({
-    message: messages.coupon.deletedSuccessfully || "Coupon soft deleted successfully",
+    message:
+      messages.coupon.deletedSuccessfully || "Coupon soft deleted successfully",
     success: true,
     data: couponExist,
   });

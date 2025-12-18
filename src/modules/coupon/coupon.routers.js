@@ -15,6 +15,7 @@ couponRouter.post(
   validate(addCouponVal),
   couponControllers.addCoupon
 );
+
 couponRouter.post("/valid", isAuthenticated, couponControllers.validateCoupon);
 couponRouter.put(
   "/:id",
@@ -22,6 +23,7 @@ couponRouter.put(
   validate(updateCouponVal),
   couponControllers.updateCoupon
 );
+couponRouter.get("/code/:code", isAuthenticated, couponControllers.getCouponByCode);
 couponRouter.put(
   "/soft:id",
   isAuthenticated,

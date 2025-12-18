@@ -14,6 +14,7 @@ import Product from "../../../database/models/product.model.js";
 import { Parser } from "json2csv";
 import PDFDocument from "pdfkit";
 import Stripe from "stripe";
+
 const stripe = new Stripe(process.env.APIKEYORDER, {
   apiVersion: "2023-10-16",
 });
@@ -21,6 +22,9 @@ const stripe = new Stripe(process.env.APIKEYORDER, {
 export const createOrder = catchAsyncError(async (req, res, next) => {
   const { fullName, address, phone, couponCode, notes, payment } = req.body;
   const userId = req.authUser._id;
+
+  // Debug: Log received payment method
+  console.log("📦 createOrder called - Payment method:", payment);
 
   const cart = await Cart.findOne({ user: userId }).populate(
     "products.productId"
@@ -74,6 +78,110 @@ export const createOrder = catchAsyncError(async (req, res, next) => {
     }
   }
 
+  // ================= VISA PAYMENT: Create checkout session FIRST =================
+  // Check for visa payment (case-insensitive comparison)
+  const isVisaPayment = payment && payment.toLowerCase() === "visa";
+
+  if (isVisaPayment) {
+    // Calculate coupon discount ratio to apply to each product
+    const discountRatio = appliedCoupon ? finalPrice / orderPrice : 1;
+    const couponSavings = appliedCoupon ? orderPrice - finalPrice : 0;
+
+    // Create line items with all product details and images
+    const lineItems = orderProducts.map((product) => {
+      // Extract image URL from imageCover
+      let imageUrl = null;
+      if (product.imageCover) {
+        if (typeof product.imageCover === "string") {
+          imageUrl = product.imageCover;
+        } else if (product.imageCover.secure_url) {
+          imageUrl = product.imageCover.secure_url;
+        }
+      }
+
+      const productDiscount = product.discount || 0;
+      const originalTotal = product.price * product.quantity;
+      const savedFromProductDiscount = originalTotal - product.finalPrice;
+
+      // Apply coupon discount ratio to product price
+      const priceAfterCoupon = product.finalPrice * discountRatio;
+
+      // Build detailed description
+      let description = `Qty: ${product.quantity} × ${product.price} EGP`;
+      if (productDiscount > 0) {
+        description += ` | Product Discount: ${productDiscount}% (-${savedFromProductDiscount.toFixed(
+          0
+        )} EGP)`;
+      }
+      if (appliedCoupon && discountRatio < 1) {
+        const couponSaveOnItem = product.finalPrice - priceAfterCoupon;
+        description += ` | Coupon: -${couponSaveOnItem.toFixed(0)} EGP`;
+      }
+
+      return {
+        price_data: {
+          currency: "egp",
+          product_data: {
+            name: product.title,
+            description: description,
+            images: imageUrl ? [imageUrl] : [],
+          },
+          unit_amount: Math.round(priceAfterCoupon * 100),
+        },
+        quantity: 1,
+      };
+    });
+
+    // Prepare minimal order products for metadata (Stripe has 500 char limit per value)
+    // Store only productId and quantity - fetch full details in webhook
+    const orderProductsForMetadata = orderProducts.map((p) => ({
+      p: p.productId.toString(), // productId
+      q: p.quantity, // quantity
+    }));
+
+    // NO ORDER CREATED HERE - Order will be created in webhook after payment success
+
+    // Create Stripe checkout session with all order data in metadata
+    const successUrl =
+      process.env.SUCCESS_URL || "http://localhost:5173/order-success";
+    const successUrlWithSession = successUrl.includes("?")
+      ? `${successUrl}&session_id={CHECKOUT_SESSION_ID}`
+      : `${successUrl}?session_id={CHECKOUT_SESSION_ID}`;
+
+    const cancelUrl = process.env.CANCEL_URL || "http://localhost:5173/cart";
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "payment",
+      success_url: successUrlWithSession,
+      cancel_url: cancelUrl,
+      customer_email: req.authUser.email,
+      line_items: lineItems,
+      metadata: {
+        userId: userId.toString(),
+        fullName: fullName || "",
+        address: address || "",
+        phone: phone || "",
+        notes: notes || "",
+        couponId: appliedCoupon ? appliedCoupon.toString() : "",
+        orderPrice: orderPrice.toString(),
+        finalPrice: finalPrice.toString(),
+        orderProducts: JSON.stringify(orderProductsForMetadata),
+      },
+    });
+
+    // Return checkout URL - NO order created yet
+    return res.status(200).json({
+      success: true,
+      message: "Checkout session created. Complete payment to place order.",
+      data: {
+        checkoutUrl: session.url,
+        sessionId: session.id,
+      },
+    });
+  }
+
+  // ================= CASH PAYMENT: Create order immediately =================
   const order = await Order.create({
     fullName,
     user: userId,
@@ -100,39 +208,6 @@ export const createOrder = catchAsyncError(async (req, res, next) => {
     { products: [], totalPrice: 0 }
   );
 
-  // ================= STRIPE =================
-  if (payment === payments.VISA) {
-    const lineItems = orderProducts.map((product) => ({
-      price_data: {
-        currency: "egp",
-        product_data: {
-          name: product.title,
-        },
-        unit_amount: Math.round(product.finalPrice * 100),
-      },
-      quantity: 1,
-    }));
-
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      mode: "payment",
-      success_url: process.env.SUCCESS_URL,
-      cancel_url: process.env.CANCEL_URL,
-      client_reference_id: order._id.toString(),
-      customer_email: req.authUser.email,
-      line_items: lineItems,
-    });
-
-    return res.status(201).json({
-      success: true,
-      message: messages.order.createdSuccessfully,
-      data: {
-        order,
-        checkoutUrl: session.url,
-      },
-    });
-  }
-
   res.status(201).json({
     success: true,
     message: messages.order.createdSuccessfully,
@@ -152,6 +227,134 @@ export const getUserOrders = catchAsyncError(async (req, res, next) => {
     data: orders,
   });
 });
+
+// Get order by Stripe session ID (for frontend after payment redirect)
+export const getOrderBySessionId = catchAsyncError(async (req, res, next) => {
+  const { sessionId } = req.params;
+
+  // Try to find order by stripeSessionId
+  let order = await Order.findOne({ stripeSessionId: sessionId }).populate(
+    "products.productId"
+  );
+
+  // If not found, webhook might not have processed yet - wait and retry
+  if (!order) {
+    // Wait 2 seconds and try again (webhook may be processing)
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    order = await Order.findOne({ stripeSessionId: sessionId }).populate(
+      "products.productId"
+    );
+  }
+
+  if (!order) {
+    return next(
+      new AppError(
+        "Order not found. Payment may still be processing. Please check your orders in a moment.",
+        404
+      )
+    );
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "Order retrieved successfully",
+    data: order,
+  });
+});
+
+// Verify payment with Stripe and create order (alternative to webhook)
+export const verifyPaymentAndCreateOrder = catchAsyncError(
+  async (req, res, next) => {
+    const { sessionId } = req.params;
+
+    // Check if order already exists for this session (prevent duplicates)
+    const existingOrder = await Order.findOne({ stripeSessionId: sessionId });
+    if (existingOrder) {
+      return res.status(200).json({
+        success: true,
+        message: "Order already exists",
+        data: existingOrder,
+      });
+    }
+
+    // Retrieve the session from Stripe to verify payment
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (!session) {
+      return next(new AppError("Invalid session ID", 400));
+    }
+
+    // Check if payment was successful
+    if (session.payment_status !== "paid") {
+      return next(new AppError("Payment not completed", 400));
+    }
+
+    const metadata = session.metadata;
+
+    if (!metadata || !metadata.orderProducts) {
+      return next(new AppError("Invalid session metadata", 400));
+    }
+
+    // Parse minimal product data from metadata
+    const minimalProducts = JSON.parse(metadata.orderProducts);
+
+    // Fetch full product details from database
+    const orderProducts = [];
+    for (const item of minimalProducts) {
+      const product = await Product.findById(item.p);
+      if (product) {
+        orderProducts.push({
+          productId: product._id,
+          title: product.title,
+          quantity: item.q,
+          imageCover: product.imageCover,
+          price: product.price,
+          discount: product.discount || 0,
+          finalPrice: product.priceAfterDiscount || product.price,
+        });
+      }
+    }
+
+    // Create the order
+    const order = await Order.create({
+      fullName: metadata.fullName,
+      user: metadata.userId,
+      products: orderProducts,
+      address: metadata.address || null,
+      phone: metadata.phone,
+      orderPrice: parseFloat(metadata.orderPrice),
+      finalPrice: parseFloat(metadata.finalPrice),
+      notes: metadata.notes || null,
+      payment: payments.VISA,
+      coupon: metadata.couponId || null,
+      status: orderStatus.PLACED,
+      isPaid: true,
+      paidAt: new Date(),
+      stripeSessionId: sessionId,
+    });
+
+    // Decrease stock for each product
+    for (const item of minimalProducts) {
+      await Product.findByIdAndUpdate(item.p, {
+        $inc: { stock: -item.q },
+      });
+    }
+
+    // Clear the user's cart
+    await Cart.findOneAndUpdate(
+      { user: metadata.userId },
+      { products: [], totalPrice: 0 }
+    );
+
+    console.log(`✅ Order created after payment verification: ${order._id}`);
+
+    return res.status(201).json({
+      success: true,
+      message: "Payment verified and order created successfully",
+      data: order,
+    });
+  }
+);
 
 export const getOrderDetails = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;

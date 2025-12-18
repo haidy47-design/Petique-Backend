@@ -80,6 +80,18 @@ const orderSchema = new Schema(
       required: true,
     },
     isDeleted: { type: Boolean, default: false },
+
+    // ===> payment tracking fields
+    isPaid: {
+      type: Boolean,
+      default: false,
+    },
+    paidAt: {
+      type: Date,
+    },
+    stripeSessionId: {
+      type: String,
+    },
   },
   { timestamps: true, versionKey: false }
 );

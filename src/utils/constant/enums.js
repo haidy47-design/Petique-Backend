@@ -2,7 +2,6 @@ export const roles = {
   PETOWNER: "petOwner",
   DOCTORS: "doctor",
   ADMIN: "admin",
-  OWNER: "owner"
 };
 Object.freeze(roles);
 
@@ -26,10 +25,12 @@ export const replay = {
 };
 
 export const orderStatus = {
+  PENDING: "pending", // Awaiting payment (for VISA)
   PLACED: "placed",
   SHIPPING: "shipping",
   COMPLETED: "completed",
   CANCELED: "canceled",
+  FAILED: "failed", // Payment failed
   REFUNDED: "refund",
 };
 Object.freeze(orderStatus);

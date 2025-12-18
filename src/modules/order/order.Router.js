@@ -4,6 +4,7 @@ import * as orderControllers from "./order.controllers.js";
 import { roles } from "./../../utils/constant/enums.js";
 
 const orderRouter = Router();
+
 orderRouter.get("/", isAuthenticated, orderControllers.getUserOrders);
 orderRouter.get("/order-count", orderControllers.getUserOrderCounts);
 orderRouter.get(
@@ -27,6 +28,15 @@ orderRouter.get(
   orderControllers.getRevenuePerMonth
 );
 orderRouter.get("/allorders", isAuthenticated, orderControllers.getAllOrders);
+orderRouter.get(
+  "/session/:sessionId",
+  isAuthenticated,
+  orderControllers.getOrderBySessionId
+);
+orderRouter.post(
+  "/verify-payment/:sessionId",
+  orderControllers.verifyPaymentAndCreateOrder
+);
 orderRouter.post("/", isAuthenticated, orderControllers.createOrder);
 orderRouter.post(
   "/checkSession/:id",
