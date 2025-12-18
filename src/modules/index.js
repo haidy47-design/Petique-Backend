@@ -18,6 +18,7 @@ import doctorRouter from "./doctor/doctor.routers.js";
 import couponRouter from "./coupon/coupon.routers.js";
 import discountRouter from './discount/discount.routers.js';
 import chatRouter from './Chat/chatRouter.js';
+import analyticsRouter from './animalCategory/analysis/analysis.routers.js';
 
 export {
   authRouter,
@@ -39,5 +40,6 @@ export {
   doctorRouter,
   couponRouter,
   discountRouter,
-  chatRouter
+  chatRouter,
+  analyticsRouter
 };
