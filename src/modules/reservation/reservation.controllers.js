@@ -139,11 +139,10 @@ export const updateReservation = catchAsyncError(async (req, res, next) => {
   }
 
   // validate date
-  const newDate = new Date(date);
-  newDate.setHours(23, 59, 59, 999);
-
-  if (newDate < new Date()) {
-    return next(new AppError("Reservation date must be today or future", 400));
+  if (date) {
+    const newDate = new Date(date);
+    newDate.setHours(23, 59, 59, 999);
+    reservation.date = newDate;
   }
 
   // validate timeSlot
@@ -636,24 +635,22 @@ export const getMyUpcomingReservations = catchAsyncError(
   }
 );
 // ======================= USER: PAST APPOINTMENTS ======================== //
-export const getMyPastReservations = catchAsyncError(
-  async (req, res, next) => {
-    const today = new Date();
+export const getMyPastReservations = catchAsyncError(async (req, res, next) => {
+  const today = new Date();
 
-    const reservations = await Reservation.find({
-      petOwner: req.authUser._id,
-      date: { $lt: today },
-      isDeleted: false,
-    })
-      .sort({ date: -1 })
-      .populate("pet")
-      .populate("service")
-      .populate("doctor");
+  const reservations = await Reservation.find({
+    petOwner: req.authUser._id,
+    date: { $lt: today },
+    isDeleted: false,
+  })
+    .sort({ date: -1 })
+    .populate("pet")
+    .populate("service")
+    .populate("doctor");
 
-    res.status(200).json({
-      success: true,
-      count: reservations.length,
-      data: reservations,
-    });
-  }
-);
+  res.status(200).json({
+    success: true,
+    count: reservations.length,
+    data: reservations,
+  });
+});
