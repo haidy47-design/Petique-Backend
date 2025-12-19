@@ -296,7 +296,7 @@ export const getResRevenueAnalysis = catchAsyncError(async (req, res) => {
   const revenue = await Reservation.aggregate([
     {
       $match: {
-        paymentStatus: "PAID",
+        paymentStatus: "paid",
         isDeleted: false,
       },
     },
@@ -315,7 +315,7 @@ export const getResRevenueAnalysis = catchAsyncError(async (req, res) => {
     {
       $group: {
         _id: null,
-        totalRevenue: { $sum: "$service.price" },
+        totalRevenue: { $sum: "$service.priceRange" },
         totalReservations: { $sum: 1 },
       },
     },
@@ -324,5 +324,52 @@ export const getResRevenueAnalysis = catchAsyncError(async (req, res) => {
   res.status(200).json({
     success: true,
     data: revenue[0] || { totalRevenue: 0, totalReservations: 0 },
+  });
+});
+
+
+// ====> get monthly revenues
+export const getMonthlyRevenue = catchAsyncError(async (req, res, next) => {
+  const year = parseInt(req.query.year) || new Date().getFullYear();
+
+  const revenue = await Reservation.aggregate([
+    {
+      $match: {
+        isDeleted: false,
+        paymentStatus: "paid",
+        date: {
+          $gte: new Date(`${year}-01-01`),
+          $lte: new Date(`${year}-12-31`),
+        },
+      },
+    },
+    {
+      $lookup: {
+        from: "services",
+        localField: "service",
+        foreignField: "_id",
+        as: "serviceDetails",
+      },
+    },
+    { $unwind: "$serviceDetails" },
+    {
+      $group: {
+        _id: { month: { $month: "$date" }, year: { $year: "$date" } },
+        totalRevenue: { $sum: "$serviceDetails.priceRange" },
+        totalReservations: { $sum: 1 },
+      },
+    },
+    { $sort: { "_id.month": 1 } },
+  ]);
+
+  res.status(200).json({
+    success: true,
+    year,
+    data: revenue.map((r) => ({
+      month: r._id.month,
+      year: r._id.year,
+      totalRevenue: r.totalRevenue,
+      totalReservations: r.totalReservations,
+    })),
   });
 });

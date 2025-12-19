@@ -58,9 +58,13 @@ analyticsRouter.get(
 );
 
 analyticsRouter.get(
-  "/revenue",
+  "/total-revenue",
   isAuthenticated,
   analytics.getResRevenueAnalysis
 );
-
+analyticsRouter.get(
+  "/revenue",
+  isAuthenticated,
+  analytics.getMonthlyRevenue
+);
 export default analyticsRouter;
