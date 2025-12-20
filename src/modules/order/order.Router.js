@@ -38,6 +38,7 @@ orderRouter.post(
   orderControllers.verifyPaymentAndCreateOrder
 );
 orderRouter.post("/", isAuthenticated, orderControllers.createOrder);
+orderRouter.post("/withoutStripe", isAuthenticated, orderControllers.createOrderWithoutstripe);
 orderRouter.post(
   "/checkSession/:id",
   isAuthenticated,

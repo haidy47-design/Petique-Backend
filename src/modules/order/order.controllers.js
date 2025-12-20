@@ -215,6 +215,97 @@ export const createOrder = catchAsyncError(async (req, res, next) => {
   });
 });
 
+
+export const createOrderWithoutstripe = catchAsyncError(async (req, res, next) => {
+  const { fullName, address, phone, couponCode, notes } = req.body;
+  const userId = req.authUser._id;
+  let cart = await Cart.findOne({ user: userId }).populate(
+    "products.productId"
+  );
+  if (!cart) {
+    cart = await Cart.create({ user: userId, products: [], totalPrice: 0 });
+  }
+
+  if (!cart.products.length)
+    return next(new AppError(messages.cart.empty, 404));
+
+  let orderProducts = [];
+  let orderPrice = 0;
+
+  for (const item of cart.products) {
+    const product = item.productId;
+
+    if (!product.instock(item.quantity))
+      return next(new AppError(messages.product.outStock, 400));
+
+    const productFinal = product.finalPrice * item.quantity;
+
+    orderProducts.push({
+      productId: product._id,
+      imageCover: product.imageCover,
+      title: product.title,
+      price: product.price,
+      quantity: item.quantity,
+      discount: product.discount,
+      finalPrice: productFinal,
+    });
+
+    orderPrice += productFinal;
+  }
+
+  let finalPrice = orderPrice;
+  let appliedCoupon = null;
+
+  if (couponCode) {
+    const coupon = await Coupon.findOne({ code: couponCode });
+    if (!coupon) return next(new AppError(messages.coupon.notFound, 404));
+
+    const now = Date.now();
+    if (coupon.fromDate > now)
+      return next(new AppError("Coupon has not started yet", 400));
+    if (coupon.expire < now)
+      return next(new AppError("Coupon has expired", 400));
+
+    appliedCoupon = coupon._id;
+
+    if (coupon.type === couponTypes.PERCENTAGE) {
+      finalPrice = orderPrice - (orderPrice * coupon.discount) / 100;
+    } else if (coupon.type === couponTypes.FIXED_AMOUNT) {
+      finalPrice = Math.max(0, orderPrice - coupon.discount);
+    }
+  }
+
+  const order = await Order.create({
+    fullName,
+    user: userId,
+    products: orderProducts,
+    address,
+    phone,
+    orderPrice,
+    finalPrice,
+    notes,
+    coupon: appliedCoupon,
+  });
+
+  for (const item of orderProducts) {
+    await Product.findByIdAndUpdate(item.productId, {
+      $inc: { stock: -item.quantity },
+    });
+  }
+  await Cart.findOneAndUpdate(
+    { user: userId },
+    { $set: { products: [], totalPrice: 0 } },
+    { new: true }
+  );
+
+  res.status(201).json({
+    message: messages.order.createdSuccessfully,
+    success: true,
+    data: order,
+  });
+});
+
+
 export const getUserOrders = catchAsyncError(async (req, res, next) => {
   const userId = req.authUser._id;
   const orders = await Order.find({ user: userId })
