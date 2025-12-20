@@ -9,10 +9,10 @@ import Cart from "../../../database/models/cart.model.js";
 import { generateOTP } from "../../utils/otp.js";
 import Token from "../../../database/models/token.model.js";
 import { AppError, catchAsyncError } from "../../utils/catch-error.js";
-import { verifyGoogleToken } from "../../utils/oAuth/googleAuth.js";
+import { verifyGoogleAccessToken, verifyGoogleToken } from "../../utils/oAuth/googleAuth.js";
 import loginActivity from "../../../database/models/loginActivity.js";
 import notificationModel from "../../../database/models/notification.model.js";
-import { ApiFeature } from './../../utils/file-feature.js';
+import { ApiFeature } from "./../../utils/file-feature.js";
 
 export const signup = catchAsyncError(async (req, res, next) => {
   let { userName, email, password, Cpassword, gender, mobileNumber } = req.body;
@@ -268,9 +268,18 @@ export const logout = catchAsyncError(async (req, res, next) => {
 });
 
 export const googleLogin = catchAsyncError(async (req, res, next) => {
-  const { idToken } = req.body;
+  const { idToken, accessToken: googleAccessToken } = req.body;
 
-  const googleUser = await verifyGoogleToken(idToken);
+  // ===> handle both idToken and accessToken for flexibility
+  let googleUser;
+  if (idToken) {
+    googleUser = await verifyGoogleToken(idToken);
+  } else if (googleAccessToken) {
+    googleUser = await verifyGoogleAccessToken(googleAccessToken);
+  } else {
+    return next(new AppError("Google token is required (idToken or accessToken)", 400));
+  }
+
   if (!googleUser || !googleUser.email_verified) {
     return next(new AppError("Invalid Google token", 401));
   }
@@ -281,9 +290,10 @@ export const googleLogin = catchAsyncError(async (req, res, next) => {
     user = await User.create({
       userName: googleUser.name,
       email: googleUser.email,
-      password: null,
+      password: "User1",
       isVerified: true,
       status: status.VERIFIED,
+      gender:"female",
       authProvider: "google",
       profileImage: googleUser.picture,
     });
@@ -329,7 +339,6 @@ export const getLoginActivity = catchAsyncError(async (req, res, next) => {
   const size = parseInt(req.query.size) || 10;
   const totalPages = Math.ceil(totalLogs / size);
 
-
   res.status(200).json({
     success: true,
     message: "Login activity fetched successfully",
@@ -345,11 +354,11 @@ export const getLoginActivity = catchAsyncError(async (req, res, next) => {
   });
 });
 
-
 export const getMyNotifications = catchAsyncError(async (req, res) => {
-  const notifications = await notificationModel.find({
-    user: req.authUser._id,
-  })
+  const notifications = await notificationModel
+    .find({
+      user: req.authUser._id,
+    })
     .sort({ createdAt: -1 })
     .limit(20);
 

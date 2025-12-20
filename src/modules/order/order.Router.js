@@ -54,14 +54,12 @@ orderRouter.put(
 orderRouter.put(
   "/soft/:id",
   isAuthenticated,
-  isAuthorized([roles.ADMIN]),
   orderControllers.softDeleteOrder
 );
 
 orderRouter.delete(
   "/hard/:id",
   isAuthenticated,
-  isAuthorized([roles.ADMIN]),
   orderControllers.hardDeleteOrder
 );
 
