@@ -146,11 +146,11 @@ export const updateReservation = catchAsyncError(async (req, res, next) => {
   }
 
   // validate date
-  if (date) {
-    const newDate = new Date(date);
-    newDate.setHours(23, 59, 59, 999);
-    reservation.date = newDate;
-  }
+  // if (date) {
+  //   const newDate = new Date(date);
+  //   newDate.setHours(23, 59, 59, 999);
+  //   reservation.date = newDate;
+  // }
 
   // validate timeSlot
   if (timeSlot) {
@@ -252,10 +252,7 @@ export const createReservationForAdmin = catchAsyncError(
       });
       if (conflict)
         return next(
-          new AppError(
-            "This time slot is already taken for this doctor",
-            409
-          )
+          new AppError("This time slot is already taken for this doctor", 409)
         );
     }
 
@@ -490,11 +487,15 @@ export const getDoctorTodayReservations = catchAsyncError(
     if (req.authUser.role !== roles.DOCTORS)
       return next(new AppError("Only doctors can access this", 403));
 
-    const today = new Date().toISOString().split("T")[0];
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
 
     const reservations = await Reservation.find({
       doctor: req.authUser._id,
-      date: today,
+      date: { $gte: startOfDay, $lte: endOfDay }, // Date range query
       isDeleted: false,
     })
       .populate("petOwner")
@@ -683,10 +684,14 @@ export const filterReservations = catchAsyncError(async (req, res, next) => {
 
 // ======================= GET RESERVATIONS FOR TODAY ======================== //
 export const getTodayReservations = catchAsyncError(async (req, res, next) => {
-  const today = new Date().toISOString().split("T")[0]; // "2025-01-10"
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const endOfDay = new Date();
+  endOfDay.setHours(23, 59, 59, 999);
 
   const reservations = await Reservation.find({
-    date: today,
+    date: { $gte: startOfDay, $lte: endOfDay },
     isDeleted: false,
   })
     .sort({ timeSlot: 1 })
