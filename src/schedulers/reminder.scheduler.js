@@ -76,3 +76,113 @@
 //     console.log("📩 Reminder scheduler executed at", now.toISOString());
 //   });
 // };
+
+import schedule from "node-schedule";
+import Reservation from "../../database/models/reservation.model.js";
+import Vaccination from "../../database/models/vaccination.model.js";
+import Pet from "../../database/models/pet.model.js";
+import { sendReminderEmail } from "../utils/emails/email.js";
+
+console.log("⏰ Reminder scheduler initialized");
+
+// ===> runs every hour at minute 0
+schedule.scheduleJob("0 * * * *", async () => {
+  try {
+    const now = new Date();
+    const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+
+    // ==> reservation reminder
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const endOfTomorrow = new Date();
+    endOfTomorrow.setDate(endOfTomorrow.getDate() + 1);
+    endOfTomorrow.setHours(23, 59, 59, 999);
+
+    const reservations = await Reservation.find({
+      isDeleted: false,
+      status: { $in: ["pending", "confirmed"] },
+      date: { $gte: startOfToday, $lte: endOfTomorrow },
+    })
+      .populate("petOwner", "email")
+      .populate("pet", "name type");
+
+    for (const resv of reservations) {
+      try {
+        // timeSlot example: "10:00 - 11:00"
+        const startTime = resv.timeSlot.split("-")[0].trim(); // "10:00"
+        const [hour, minute] = startTime.split(":");
+
+        const appointmentDateTime = new Date(resv.date);
+        appointmentDateTime.setHours(
+          Number(hour),
+          Number(minute),
+          0,
+          0
+        );
+
+        if (
+          appointmentDateTime > now &&
+          appointmentDateTime <= twoHoursLater
+        ) {
+          await sendReminderEmail({
+            to: resv.petOwner.email,
+            petName: resv.pet.name,
+            type: "Reservation",
+            title: "Upcoming Appointment",
+            remindAt: appointmentDateTime,
+          });
+
+          console.log(
+            `📩 Reservation reminder sent → ${resv.petOwner.email}`
+          );
+        }
+      } catch (err) {
+        console.error("❌ Reservation reminder failed:", err);
+      }
+    }
+
+    //==> vaccination
+
+    const pets = await Pet.find({ isDeleted: false }).populate(
+      "petOwner",
+      "email"
+    );
+
+    const vaccinations = await Vaccination.find({ isDeleted: false });
+
+    for (const pet of pets) {
+      if (!pet.DOB) continue;
+
+      for (const vac of vaccinations) {
+        for (const dose of vac.doses) {
+          const doseDate = new Date(pet.DOB);
+          doseDate.setDate(doseDate.getDate() + dose.ageInWeeks * 7);
+
+          if (doseDate > now && doseDate <= twoHoursLater) {
+            try {
+              await sendReminderEmail({
+                to: pet.petOwner.email,
+                petName: pet.name,
+                type: "Vaccination",
+                title: `${vac.name} - Dose ${dose.doseNumber}`,
+                remindAt: doseDate,
+              });
+
+              console.log(
+                `💉 Vaccination reminder sent → ${pet.petOwner.email}`
+              );
+            } catch (err) {
+              console.error("❌ Vaccination reminder failed:", err);
+            }
+          }
+        }
+      }
+    }
+
+    console.log("✅ Reminder scheduler cycle completed");
+  } catch (err) {
+    console.error("❌ Reminder scheduler fatal error:", err);
+  }
+});
