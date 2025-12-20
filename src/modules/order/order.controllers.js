@@ -1,4 +1,5 @@
 import axios from "axios";
+import mongoose from "mongoose";
 
 import Cart from "../../../database/models/cart.model.js";
 import Order from "../../../database/models/order.model.js";
@@ -14,6 +15,7 @@ import Product from "../../../database/models/product.model.js";
 import { Parser } from "json2csv";
 import PDFDocument from "pdfkit";
 import Stripe from "stripe";
+import notificationModel from "../../../database/models/notification.model.js";
 
 const stripe = new Stripe(process.env.APIKEYORDER, {
   apiVersion: "2023-10-16",
@@ -169,6 +171,16 @@ export const createOrder = catchAsyncError(async (req, res, next) => {
         orderProducts: JSON.stringify(orderProductsForMetadata),
       },
     });
+    await notificationModel.create({
+      user: userId,
+      type: "PAYMENT",
+      title: "Payment Started",
+      message: "You started checkout. Complete payment to place your order.",
+      data: {
+        paymentMethod: "visa",
+        amount: finalPrice,
+      },
+    });
 
     // Return checkout URL - NO order created yet
     return res.status(200).json({
@@ -195,7 +207,13 @@ export const createOrder = catchAsyncError(async (req, res, next) => {
     coupon: appliedCoupon,
     status: orderStatus.PLACED,
   });
-
+  await notificationModel.create({
+    user: userId,
+    type: "ORDER",
+    title: "Order Placed",
+    message: `Your order has been placed successfully.`,
+    data: { orderId: order._id, status: order.status },
+  });
   // decrease stock
   for (const item of orderProducts) {
     await Product.findByIdAndUpdate(item.productId, {
@@ -215,96 +233,103 @@ export const createOrder = catchAsyncError(async (req, res, next) => {
   });
 });
 
-
-export const createOrderWithoutstripe = catchAsyncError(async (req, res, next) => {
-  const { fullName, address, phone, couponCode, notes } = req.body;
-  const userId = req.authUser._id;
-  let cart = await Cart.findOne({ user: userId }).populate(
-    "products.productId"
-  );
-  if (!cart) {
-    cart = await Cart.create({ user: userId, products: [], totalPrice: 0 });
-  }
-
-  if (!cart.products.length)
-    return next(new AppError(messages.cart.empty, 404));
-
-  let orderProducts = [];
-  let orderPrice = 0;
-
-  for (const item of cart.products) {
-    const product = item.productId;
-
-    if (!product.instock(item.quantity))
-      return next(new AppError(messages.product.outStock, 400));
-
-    const productFinal = product.finalPrice * item.quantity;
-
-    orderProducts.push({
-      productId: product._id,
-      imageCover: product.imageCover,
-      title: product.title,
-      price: product.price,
-      quantity: item.quantity,
-      discount: product.discount,
-      finalPrice: productFinal,
-    });
-
-    orderPrice += productFinal;
-  }
-
-  let finalPrice = orderPrice;
-  let appliedCoupon = null;
-
-  if (couponCode) {
-    const coupon = await Coupon.findOne({ code: couponCode });
-    if (!coupon) return next(new AppError(messages.coupon.notFound, 404));
-
-    const now = Date.now();
-    if (coupon.fromDate > now)
-      return next(new AppError("Coupon has not started yet", 400));
-    if (coupon.expire < now)
-      return next(new AppError("Coupon has expired", 400));
-
-    appliedCoupon = coupon._id;
-
-    if (coupon.type === couponTypes.PERCENTAGE) {
-      finalPrice = orderPrice - (orderPrice * coupon.discount) / 100;
-    } else if (coupon.type === couponTypes.FIXED_AMOUNT) {
-      finalPrice = Math.max(0, orderPrice - coupon.discount);
+export const createOrderWithoutstripe = catchAsyncError(
+  async (req, res, next) => {
+    const { fullName, address, phone, couponCode, notes } = req.body;
+    const userId = req.authUser._id;
+    let cart = await Cart.findOne({ user: userId }).populate(
+      "products.productId"
+    );
+    if (!cart) {
+      cart = await Cart.create({ user: userId, products: [], totalPrice: 0 });
     }
-  }
 
-  const order = await Order.create({
-    fullName,
-    user: userId,
-    products: orderProducts,
-    address,
-    phone,
-    orderPrice,
-    finalPrice,
-    notes,
-    coupon: appliedCoupon,
-  });
+    if (!cart.products.length)
+      return next(new AppError(messages.cart.empty, 404));
 
-  for (const item of orderProducts) {
-    await Product.findByIdAndUpdate(item.productId, {
-      $inc: { stock: -item.quantity },
+    let orderProducts = [];
+    let orderPrice = 0;
+
+    for (const item of cart.products) {
+      const product = item.productId;
+
+      if (!product.instock(item.quantity))
+        return next(new AppError(messages.product.outStock, 400));
+
+      const productFinal = product.finalPrice * item.quantity;
+
+      orderProducts.push({
+        productId: product._id,
+        imageCover: product.imageCover,
+        title: product.title,
+        price: product.price,
+        quantity: item.quantity,
+        discount: product.discount,
+        finalPrice: productFinal,
+      });
+
+      orderPrice += productFinal;
+    }
+
+    let finalPrice = orderPrice;
+    let appliedCoupon = null;
+
+    if (couponCode) {
+      const coupon = await Coupon.findOne({ code: couponCode });
+      if (!coupon) return next(new AppError(messages.coupon.notFound, 404));
+
+      const now = Date.now();
+      if (coupon.fromDate > now)
+        return next(new AppError("Coupon has not started yet", 400));
+      if (coupon.expire < now)
+        return next(new AppError("Coupon has expired", 400));
+
+      appliedCoupon = coupon._id;
+
+      if (coupon.type === couponTypes.PERCENTAGE) {
+        finalPrice = orderPrice - (orderPrice * coupon.discount) / 100;
+      } else if (coupon.type === couponTypes.FIXED_AMOUNT) {
+        finalPrice = Math.max(0, orderPrice - coupon.discount);
+      }
+    }
+
+    const order = await Order.create({
+      fullName,
+      user: userId,
+      products: orderProducts,
+      address,
+      phone,
+      orderPrice,
+      finalPrice,
+      notes,
+      coupon: appliedCoupon,
+    });
+    await notificationModel.create({
+      user: userId,
+      type: "ORDER",
+      title: "Order Placed",
+      message: `Your order has been placed successfully.`,
+      data: { orderId: order._id, status: order.status },
+    });
+
+    for (const item of orderProducts) {
+      await Product.findByIdAndUpdate(item.productId, {
+        $inc: { stock: -item.quantity },
+      });
+    }
+    await Cart.findOneAndUpdate(
+      { user: userId },
+      { $set: { products: [], totalPrice: 0 } },
+      { new: true }
+    );
+
+    res.status(201).json({
+      message: messages.order.createdSuccessfully,
+      success: true,
+      data: order,
     });
   }
-  await Cart.findOneAndUpdate(
-    { user: userId },
-    { $set: { products: [], totalPrice: 0 } },
-    { new: true }
-  );
-
-  res.status(201).json({
-    message: messages.order.createdSuccessfully,
-    success: true,
-    data: order,
-  });
-});
-
+);
 
 export const getUserOrders = catchAsyncError(async (req, res, next) => {
   const userId = req.authUser._id;
@@ -438,7 +463,16 @@ export const verifyPaymentAndCreateOrder = catchAsyncError(
     );
 
     console.log(`✅ Order created after payment verification: ${order._id}`);
-
+    await notificationModel.create({
+      user: metadata.userId,
+      type: "ORDER",
+      title: "Order Placed",
+      message: "Your order has been placed successfully.",
+      data: {
+        orderId: order._id,
+        status: order.status,
+      },
+    });
     return res.status(201).json({
       success: true,
       message: "Payment verified and order created successfully",
@@ -494,6 +528,13 @@ export const updateOrderStatus = catchAsyncError(async (req, res, next) => {
 
   order.status = status;
   await order.save();
+  await notificationModel.create({
+    user: order.user,
+    type: "ORDER",
+    title: "Order Status Updated",
+    message: `Your order is now ${status}`,
+    data: { orderId: order._id, status },
+  });
 
   return res.status(200).json({
     message: "Order status updated successfully",

@@ -10,6 +10,9 @@ import { generateOTP } from "../../utils/otp.js";
 import Token from "../../../database/models/token.model.js";
 import { AppError, catchAsyncError } from "../../utils/catch-error.js";
 import { verifyGoogleToken } from "../../utils/oAuth/googleAuth.js";
+import loginActivity from "../../../database/models/loginActivity.js";
+import notificationModel from "../../../database/models/notification.model.js";
+import { ApiFeature } from './../../utils/file-feature.js';
 
 export const signup = catchAsyncError(async (req, res, next) => {
   let { userName, email, password, Cpassword, gender, mobileNumber } = req.body;
@@ -308,4 +311,58 @@ export const googleLogin = catchAsyncError(async (req, res, next) => {
     accessToken,
     user,
   });
+});
+export const getLoginActivity = catchAsyncError(async (req, res, next) => {
+  const apiFeature = new ApiFeature(
+    loginActivity.find({ user: req.authUser._id }),
+    req.query
+  )
+    .sort() // sort handled inside ApiFeature (you can still default manually)
+    .pagination();
+
+  const totalLogs = await loginActivity.countDocuments({
+    user: req.authUser._id,
+  });
+  const logs = await apiFeature.mongooseQuery.sort({ loggedAt: -1 }); // <-- default sort if none provided
+
+  const page = parseInt(req.query.page) || 1;
+  const size = parseInt(req.query.size) || 10;
+  const totalPages = Math.ceil(totalLogs / size);
+
+
+  res.status(200).json({
+    success: true,
+    message: "Login activity fetched successfully",
+    data: logs,
+    meta: {
+      totalLogs,
+      page,
+      size,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    },
+  });
+});
+
+
+export const getMyNotifications = catchAsyncError(async (req, res) => {
+  const notifications = await notificationModel.find({
+    user: req.authUser._id,
+  })
+    .sort({ createdAt: -1 })
+    .limit(20);
+
+  res.status(200).json({
+    success: true,
+    data: notifications,
+  });
+});
+
+export const markNotificationAsRead = catchAsyncError(async (req, res) => {
+  const { id } = req.params;
+
+  await notificationModel.findByIdAndUpdate(id, { isRead: true });
+
+  res.status(200).json({ success: true });
 });

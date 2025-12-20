@@ -7,6 +7,7 @@ import { AppError, catchAsyncError } from "../../utils/catch-error.js";
 import { ApiFeature } from "../../utils/file-feature.js";
 import { roles } from "../../utils/constant/enums.js";
 import { TIME_SLOTS } from "../../utils/constant/timeSlots.js";
+import notificationModel from "../../../database/models/notification.model.js";
 
 // ===> Create reservation
 export const createReservation = catchAsyncError(async (req, res, next) => {
@@ -75,7 +76,13 @@ export const createReservation = catchAsyncError(async (req, res, next) => {
     timeSlot,
     notes,
   });
-
+  await notificationModel.create({
+    user: req.authUser._id,
+    type: "RESERVATION",
+    title: "You Make Reservation",
+    message: `Your reservation for ${serviceExist.title} on ${date} at ${timeSlot} has been confirmed.`,
+    link: `/reservations/${reservation._id}`,
+  });
   // ===> 8) Return populated object
   const result = await Reservation.findById(reservation._id)
     .populate("pet")

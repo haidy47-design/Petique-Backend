@@ -49,7 +49,6 @@ orderRouter.put("/:id", isAuthenticated, orderControllers.updateOrder);
 orderRouter.put(
   "/status/:id",
   isAuthenticated,
-  isAuthorized([roles]),
   orderControllers.updateOrderStatus
 );
 orderRouter.put(

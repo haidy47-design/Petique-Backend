@@ -20,5 +20,8 @@ authRouter.post("/logout", isAuthenticated, authControllers.logout);
 authRouter.post("/verifyOtp", authControllers.verifyOtp);
 authRouter.put("/forgetPass", authControllers.forgetPassword);
 authRouter.put("/changePass", authControllers.changePassword);
+authRouter.get("/activity", isAuthenticated, authControllers.getLoginActivity);
+authRouter.get("/notifications", isAuthenticated, authControllers.getMyNotifications);
+authRouter.put("/notifications/:id/read", isAuthenticated, authControllers.markNotificationAsRead);
 
 export default authRouter;
