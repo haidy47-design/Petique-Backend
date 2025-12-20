@@ -9,6 +9,11 @@ reservationRouter.post(
   isAuthenticated,
   reservationControllers.createReservation
 );
+reservationRouter.post(
+  "/addByAdmin",
+  isAuthenticated,
+  reservationControllers.createReservationForAdmin
+);
 reservationRouter.get(
   "/",
   isAuthenticated,

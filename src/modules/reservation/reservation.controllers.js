@@ -194,6 +194,107 @@ export const updateReservation = catchAsyncError(async (req, res, next) => {
   });
 });
 
+//===> create reservation for admin
+export const createReservationForAdmin = catchAsyncError(
+  async (req, res, next) => {
+    const { userId, pet, service, doctor, date, timeSlot, notes } = req.body;
+
+    // 1) Validate user exists
+    const userExist = await User.findById(userId);
+    if (!userExist) return next(new AppError("User not found", 404));
+
+    // 2) Validate pet exists & belongs to selected user
+    const petExist = await Pet.findOne({
+      _id: pet,
+      petOwner: userId,
+      isDeleted: false,
+    });
+    if (!petExist)
+      return next(
+        new AppError("Pet not found or does not belong to selected user", 404)
+      );
+
+    // 3) Validate service exists
+    const serviceExist = await Service.findOne({
+      _id: service,
+      isDeleted: false,
+    });
+    if (!serviceExist) return next(new AppError("Service not found", 404));
+
+    // 4) Validate doctor (optional)
+    if (doctor) {
+      const doctorExist = await User.findOne({
+        _id: doctor,
+        role: roles.DOCTORS,
+        isActive: true,
+      });
+      if (!doctorExist)
+        return next(new AppError("Doctor not found or not active", 404));
+    }
+
+    // 5) Validate timeSlot
+    if (!TIME_SLOTS.includes(timeSlot)) {
+      return next(new AppError("Invalid time slot", 400));
+    }
+
+    // 6) Validate date
+    const chosenDate = new Date(date);
+    if (chosenDate < new Date())
+      return next(new AppError("Reservation date must be in the future", 400));
+
+    // 7) Check if time slot is already taken
+    if (doctor) {
+      const conflict = await Reservation.findOne({
+        doctor,
+        date,
+        timeSlot,
+        isDeleted: false,
+      });
+      if (conflict)
+        return next(
+          new AppError(
+            "This time slot is already taken for this doctor",
+            409
+          )
+        );
+    }
+
+    // 8) Create reservation
+    const reservation = await Reservation.create({
+      petOwner: userId, // admin can set any user
+      pet,
+      service,
+      serviceName: serviceExist.title,
+      doctor: doctor || null,
+      date,
+      timeSlot,
+      notes,
+    });
+
+    // 9) Notify user
+    await notificationModel.create({
+      user: userId,
+      type: "RESERVATION",
+      title: "Admin Created Reservation",
+      message: `Your reservation for ${serviceExist.title} on ${date} at ${timeSlot} has been created by admin.`,
+      link: `/reservations/${reservation._id}`,
+    });
+
+    // 10) Return populated reservation
+    const result = await Reservation.findById(reservation._id)
+      .populate("pet")
+      .populate("petOwner", "userName email mobileNumber")
+      .populate("doctor", "userName email mobileNumber role")
+      .populate("service");
+
+    res.status(201).json({
+      success: true,
+      message: "Reservation created successfully by admin",
+      data: result,
+    });
+  }
+);
+
 //===> get all reservations
 export const getReservations = catchAsyncError(async (req, res, next) => {
   const apiFeature = new ApiFeature(

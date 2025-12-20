@@ -25,7 +25,7 @@ couponRouter.put(
 );
 couponRouter.get("/code/:code", isAuthenticated, couponControllers.getCouponByCode);
 couponRouter.put(
-  "/soft:id",
+  "/soft/:id",
   isAuthenticated,
   couponControllers.softDeleteCoupon
 );
