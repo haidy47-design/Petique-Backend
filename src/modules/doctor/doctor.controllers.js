@@ -141,7 +141,7 @@ export const updateDoctor = catchAsyncError(async (req, res, next) => {
 
     const { secure_url, public_id } = await cloudinary.uploader.upload(
       req.file.path,
-      { folder: "ITI-REACT/doctors" }
+      { folder: "PetsClinic/doctors" }
     );
 
     doctor.image = { secure_url, public_id };

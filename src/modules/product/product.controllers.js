@@ -148,7 +148,8 @@ export const deleteProduct = catchAsyncError(async (req, res, next) => {
   // Check if current user is the creator
   if (
     product.createdBy.toString() !== req.authUser._id.toString() &&
-    req.authUser.role !== "admin"
+    req.authUser.role !== "admin" &&
+    req.authUser.role !== "owner"
   ) {
     return next(
       new AppError("You are not authorized to delete this product", 403)
@@ -393,9 +394,10 @@ export const softDeleteProduct = catchAsyncError(async (req, res, next) => {
   const product = await Product.findById(id);
   if (!product) return next(new AppError(messages.product.notFound, 404));
 
-  if (
+   if (
     product.createdBy.toString() !== req.authUser._id.toString() &&
-    req.authUser.role !== "admin"
+    req.authUser.role !== "admin" &&
+    req.authUser.role !== "owner"
   ) {
     return next(
       new AppError("You are not authorized to delete this product", 403)
@@ -533,7 +535,7 @@ export const removePriceDropSubscription = catchAsyncError(
       success: true,
       message:
         "You have successfully unsubscribed from price drop alerts for this product.",
-        data,
+      data,
     });
   }
 );

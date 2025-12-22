@@ -119,7 +119,8 @@ export const updateService = catchAsyncError(async (req, res, next) => {
 
   if (
     service.createdBy.toString() !== req.authUser._id.toString() &&
-    req.authUser.role !== "admin"
+    req.authUser.role !== "doctor" &&
+    req.authUser.role !== "owner"
   ) {
     return next(new AppError("Not authorized", 403));
   }
@@ -196,10 +197,11 @@ export const deleteService = catchAsyncError(async (req, res, next) => {
   const service = await Service.findById(id);
   if (!service) return next(new AppError("Service not found", 404));
 
-  // Only creator or admin
+  // Only creator or doctor or owner
   if (
     service.createdBy.toString() !== req.authUser._id.toString() &&
-    req.authUser.role !== "admin"
+    req.authUser.role !== "doctor" &&
+    req.authUser.role !== "owner"
   ) {
     return next(new AppError("Not authorized", 403));
   }

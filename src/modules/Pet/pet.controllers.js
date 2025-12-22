@@ -61,7 +61,8 @@ export const updatePet = catchAsyncError(async (req, res, next) => {
 
   if (
     pet.petOwner.toString() !== req.authUser._id.toString() &&
-    req.authUser.role !== "admin"
+    req.authUser.role !== "doctor" &&
+    req.authUser.role !== "owner"
   ) {
     return next(new AppError("You are not authorized to update this pet", 403));
   }
@@ -131,7 +132,8 @@ export const softDeletePet = catchAsyncError(async (req, res, next) => {
 
   if (
     pet.petOwner.toString() !== req.authUser._id.toString() &&
-    req.authUser.role !== "admin"
+    req.authUser.role !== "doctor" &&
+    req.authUser.role !== "owner"
   ) {
     return next(new AppError("You are not authorized to delete this pet", 403));
   }
@@ -156,7 +158,8 @@ export const deletePet = catchAsyncError(async (req, res, next) => {
 
   if (
     pet.petOwner.toString() !== req.authUser._id.toString() &&
-    req.authUser.role !== "admin"
+    req.authUser.role !== "doctor" &&
+    req.authUser.role !== "owner"
   ) {
     return next(new AppError("You are not authorized to delete this pet", 403));
   }
@@ -233,12 +236,13 @@ export const addVaccinationToPet = catchAsyncError(async (req, res, next) => {
   const pet = await Pet.findById(id);
   if (!pet) return next(new AppError("Pet not found", 404));
 
-  // if (
-  //   pet.petOwner.toString() !== req.authUser._id.toString() &&
-  //   req.authUser.role !== "admin"
-  // ) {
-  //   return next(new AppError("Not authorized to update this pet", 403));
-  // }
+  if (
+    pet.petOwner.toString() !== req.authUser._id.toString() &&
+    req.authUser.role !== "doctor" &&
+    req.authUser.role !== "owner"
+  ) {
+    return next(new AppError("Not authorized to update this pet", 403));
+  }
 
   const newVaccination = {
     vaccine,
